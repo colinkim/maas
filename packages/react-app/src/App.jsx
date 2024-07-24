@@ -211,10 +211,13 @@ function App(props) {
   const location = useLocation();
 
   const cachedNetwork = window.localStorage.getItem("network");
-  let targetNetwork = NETWORKS[cachedNetwork || "mainnet"];
+  //let targetNetwork = NETWORKS[cachedNetwork || "mainnet"];
+  let targetNetwork = NETWORKS[cachedNetwork || "localhost"];
 
   // backend transaction handler:
   let BACKEND_URL = "http://localhost:49899/";
+  //kimcy
+  //let BACKEND_URL = "http://localhost:8545/";
   if (targetNetwork && targetNetwork.name && targetNetwork.name != "localhost") {
     BACKEND_URL = "https://backend.multisig.lol:49899/";
   }

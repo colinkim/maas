@@ -125,6 +125,15 @@ export default function CreateMultiSigModal({
         throw "Field validation failed.";
       }
 
+      if (!writeContracts ) {
+        throw new Error("writeContracts");
+      }
+      if(!writeContracts[contractName]){
+        throw new Error("writeContracts[contractName]");
+      }
+      if(!writeContracts[contractName].create) {
+        throw new Error("Contract method 'create' is already created");
+      }
       tx(
         writeContracts[contractName].create(selectedChainId, owners, signaturesRequired, {
           value: ethers.utils.parseEther("" + parseFloat(amount).toFixed(12)),
