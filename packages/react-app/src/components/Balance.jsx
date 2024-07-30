@@ -1,42 +1,34 @@
 import React, { useState, useEffect } from "react";
 import { useBalance } from "eth-hooks";
-import { BigNumber } from 'ethers';
+import { BigNumber, Contract } from 'ethers';
 
 const { utils } = require("ethers");
 const zero = BigNumber.from(0);
 
-/** 
-  ~ What it does? ~
-
-  Displays a balance of given address in ether & dollar
-
-  ~ How can I use? ~
-
-  <Balance
-    address={address}
-    provider={mainnetProvider}
-    price={price}
-  />
-
-  ~ If you already have the balance as a bignumber ~
-  <Balance
-    balance={balance}
-    price={price}
-  />
-
-  ~ Features ~
-
-  - Provide address={address} and get balance corresponding to given address
-  - Provide provider={mainnetProvider} to access balance on mainnet or any other network (ex. localProvider)
-  - Provide price={price} of ether and get your balance converted to dollars
-**/
+// ABI for ERC20 token balance function
+const ERC20_ABI = [
+  {
+    constant: true,
+    inputs: [{ name: "_owner", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ name: "balance", type: "uint256" }],
+    type: "function",
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: "symbol",
+    outputs: [{ name: "", type: "string" }],
+    type: "function",
+  },
+];
 
 export default function Balance(props) {
   const [dollarMode, setDollarMode] = useState(false);
   const [balance, setBalance] = useState();
   const [symbol, setSymbol] = useState();
 
-  const {provider, address} = props;
+  const { provider, address } = props;
 
   const balanceContract = useBalance(props.provider, props.address);
   useEffect(() => {
@@ -63,23 +55,44 @@ export default function Balance(props) {
 
         // If the network is found, get the native currency symbol
         if (networkDetails && networkDetails.nativeCurrency) {
-            nativeCurrencySymbol = networkDetails.nativeCurrency.symbol;
+          nativeCurrencySymbol = networkDetails.nativeCurrency.symbol;
         }
-        setSymbol(nativeCurrencySymbol)
 
+        const storedSelectedToken = localStorage.getItem('selectedToken');
+        console.log('Stored selected token:', storedSelectedToken);
 
-        const newBalance = await provider.getBalance(address);
-        console.log('\n\n');
-        console.log('BALANCE INFORMATION');
-        console.log('chainId', chainId);
-        console.log('networkDetails', networkDetails);
-        console.log('nativeCurrencySymbol', nativeCurrencySymbol);
-        console.log('newBalance', newBalance);
-   
-
-        if (!newBalance.eq(balance ?? zero)) {
+        if (!storedSelectedToken) {
+          const newBalance = await provider.getBalance(address);
           setBalance(newBalance);
+          setSymbol(nativeCurrencySymbol);
+        } else {
+          let parsedToken;
+          try {
+            parsedToken = JSON.parse(storedSelectedToken);
+          } catch (e) {
+            console.error('Error parsing stored token:', e);
+            // Handle error, e.g., reset balance and symbol to default
+            const newBalance = await provider.getBalance(address);
+            setBalance(newBalance);
+            setSymbol(nativeCurrencySymbol);
+            return;
+          }
+
+          if (!parsedToken || !parsedToken.address) {
+            console.error('Parsed token is null or does not have an address property.');
+            const newBalance = await provider.getBalance(address);
+            setBalance(newBalance);
+            setSymbol(nativeCurrencySymbol);
+          } else {
+            console.log(parsedToken.address);
+            const tokenContract = new Contract(parsedToken.address, ERC20_ABI, provider);
+            const tokenBalance = await tokenContract.balanceOf(address);
+            const tokenSymbol = await tokenContract.symbol();
+            setBalance(tokenBalance);
+            setSymbol(tokenSymbol);
+          }
         }
+
       }
     }
     getBalance();
@@ -113,7 +126,7 @@ export default function Balance(props) {
         padding: "0 0.5rem",
         cursor: "pointer",
       }}
-   
+
     >
       {displayBalance} <b>{symbol}</b>
     </span>

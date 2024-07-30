@@ -29,7 +29,7 @@ import {
 } from "./components";
 import { NETWORKS, ALCHEMY_KEY } from "./constants";
 import externalContracts from "./contracts/external_contracts";
-//import multiSigWalletABI from "./contracts/multi_sig_wallet";
+import { multiSigWalletABI } from './contracts/multi_sig_wallet';// contracts
 // contracts
 import deployedContracts from "./contracts/hardhat_contracts.json";
 import { Transactor, Web3ModalSetup } from "./helpers";
@@ -43,167 +43,16 @@ const { ethers } = require("ethers");
 const initialNetwork = NETWORKS.polygonAmoy; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
 
 // 😬 Sorry for all the console logging
-const DEBUG = true;
+const DEBUG = false;
 const NETWORKCHECK = true;
 const USE_BURNER_WALLET = false; // toggle burner wallet feature
 const USE_NETWORK_SELECTOR = false;
 
 const web3Modal = Web3ModalSetup();
 
-const multiSigWalletABI = [
-  {
-    inputs: [
-      { internalType: "uint256", name: "_chainId", type: "uint256" },
-      { internalType: "address[]", name: "_owners", type: "address[]" },
-      { internalType: "uint256", name: "_signaturesRequired", type: "uint256" },
-      { internalType: "address", name: "_factory", type: "address" },
-    ],
-    stateMutability: "payable",
-    type: "constructor",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: "address", name: "sender", type: "address" },
-      { indexed: false, internalType: "uint256", name: "amount", type: "uint256" },
-      { indexed: false, internalType: "uint256", name: "balance", type: "uint256" },
-    ],
-    name: "Deposit",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: "address", name: "owner", type: "address" },
-      { indexed: false, internalType: "address payable", name: "to", type: "address" },
-      { indexed: false, internalType: "uint256", name: "value", type: "uint256" },
-      { indexed: false, internalType: "bytes", name: "data", type: "bytes" },
-      { indexed: false, internalType: "uint256", name: "nonce", type: "uint256" },
-      { indexed: false, internalType: "bytes32", name: "hash", type: "bytes32" },
-      { indexed: false, internalType: "bytes", name: "result", type: "bytes" },
-    ],
-    name: "ExecuteTransaction",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: "address", name: "owner", type: "address" },
-      { indexed: false, internalType: "bool", name: "added", type: "bool" },
-    ],
-    name: "Owner",
-    type: "event",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "newSigner", type: "address" },
-      { internalType: "uint256", name: "newSignaturesRequired", type: "uint256" },
-    ],
-    name: "addSigner",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "chainId",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address payable", name: "to", type: "address" },
-      { internalType: "uint256", name: "value", type: "uint256" },
-      { internalType: "bytes", name: "data", type: "bytes" },
-      { internalType: "bytes[]", name: "signatures", type: "bytes[]" },
-    ],
-    name: "executeTransaction",
-    outputs: [{ internalType: "bytes", name: "", type: "bytes" }],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "uint256", name: "_nonce", type: "uint256" },
-      { internalType: "address", name: "to", type: "address" },
-      { internalType: "uint256", name: "value", type: "uint256" },
-      { internalType: "bytes", name: "data", type: "bytes" },
-    ],
-    name: "getTransactionHash",
-    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "address", name: "", type: "address" }],
-    name: "isOwner",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "nonce",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    name: "owners",
-    outputs: [{ internalType: "address", name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "bytes32", name: "_hash", type: "bytes32" },
-      { internalType: "bytes", name: "_signature", type: "bytes" },
-    ],
-    name: "recover",
-    outputs: [{ internalType: "address", name: "", type: "address" }],
-    stateMutability: "pure",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "oldSigner", type: "address" },
-      { internalType: "uint256", name: "newSignaturesRequired", type: "uint256" },
-    ],
-    name: "removeSigner",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "signaturesRequired",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "newSignaturesRequired", type: "uint256" }],
-    name: "updateSignaturesRequired",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  { stateMutability: "payable", type: "receive" },
-];
-
-// 🛰 providers
-const providers = [
-  "https://eth-mainnet.gateway.pokt.network/v1/lb/611156b4a585a20035148406",
-  `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
-  "https://rpc.scaffoldeth.io:48544",
-];
 
 function App(props) {
-  // specify all the chains your app is available on. Eg: ['localhost', 'mainnet', ...otherNetworks ]
-  // reference './constants.js' for other networks
-  const networkOptions = [initialNetwork.name, "mainnet", "rinkeby"];
+  const networkOptions = [initialNetwork.name];
 
   const [injectedProvider, setInjectedProvider] = useState();
   const [address, setAddress] = useState();
@@ -211,18 +60,11 @@ function App(props) {
   const location = useLocation();
 
   const cachedNetwork = window.localStorage.getItem("network");
-  //let targetNetwork = NETWORKS[cachedNetwork || "mainnet"];
   let targetNetwork = NETWORKS[cachedNetwork || "polygonAmoy"];
 
-  // backend transaction handler:
   let BACKEND_URL = "http://192.168.1.235:49899/";
-  //kimcy
-  //let BACKEND_URL = "http://localhost:8545/";
-  // if (targetNetwork && targetNetwork.name && targetNetwork.name != "localhost") {
-  //   BACKEND_URL = "https://backend.multisig.lol:49899/";
-  // }
 
-  if(!targetNetwork) targetNetwork = NETWORKS["polygonAmoy"];
+  if (!targetNetwork) targetNetwork = NETWORKS["polygonAmoy"];
 
   // 🔭 block explorer URL
   const blockExplorer = targetNetwork.blockExplorer;
@@ -231,12 +73,9 @@ function App(props) {
   const localProvider = useStaticJsonRPC([
     process.env.REACT_APP_PROVIDER ? process.env.REACT_APP_PROVIDER : targetNetwork.rpcUrl,
   ]);
-  const mainnetProvider = useStaticJsonRPC(providers);
+  // const mainnetProvider = useStaticJsonRPC(providers);
 
-  if (DEBUG) console.log(`Using ${selectedNetwork} network`);
-
-  // 🛰 providers
-  if (DEBUG) console.log("📡 Connecting to Mainnet Ethereum");
+  if (DEBUG) console.log(`📡 Connecting to ${selectedNetwork} network`);
 
   const logoutOfWeb3Modal = async () => {
     await web3Modal.clearCachedProvider();
@@ -248,13 +87,11 @@ function App(props) {
     }, 1);
   };
 
-  /* 💵 This hook will get the price of ETH from 🦄 Uniswap: */
-  const price = useExchangeEthPrice(targetNetwork, mainnetProvider);
 
   /* 🔥 This hook will get the price of Gas from ⛽️ EtherGasStation */
   const gasPrice = useGasPrice(targetNetwork, "fast");
   // Use your injected provider from 🦊 Metamask or if you don't have it then instantly generate a 🔥 burner wallet.
-  const userProviderAndSigner = useUserProviderAndSigner(injectedProvider, localProvider, USE_BURNER_WALLET);
+  const userProviderAndSigner = useUserProviderAndSigner(injectedProvider, localProvider);
   const userSigner = userProviderAndSigner.signer;
 
   useEffect(() => {
@@ -266,6 +103,8 @@ function App(props) {
     }
     getAddress();
   }, [userSigner]);
+
+
 
   // You can warn the user if you would like them to be on a specific network
   const localChainId = localProvider && localProvider._network && localProvider._network.chainId;
@@ -281,11 +120,11 @@ function App(props) {
   const yourLocalBalance = useBalance(localProvider, address);
 
   // Just plug in different 🛰 providers to get your balance on different chains:
-  const yourMainnetBalance = useBalance(mainnetProvider, address);
+  // const yourMainnetBalance = useBalance(mainnetProvider, address);
 
   // const contractConfig = useContractConfig();
 
-  const contractConfig = { deployedContracts: deployedContracts || {}, externalContracts: externalContracts || {} };
+  const contractConfig = { externalContracts: externalContracts || {} };
 
   // Load in your local 📝 contract and read a value from it:
   const readContracts = useContractLoader(localProvider, contractConfig);
@@ -353,14 +192,26 @@ function App(props) {
 
   const [contractNameForEvent, setContractNameForEvent] = useState();
 
-  useEffect(() => {
-    async function getContractValues() {
+  async function getContractValues() {
+    if (!readContracts.MultiSigWallet) {
+      console.error("MultiSigWallet contract not initialized");
+      return;
+    }
+
+    try {
       const latestSignaturesRequired = await readContracts.MultiSigWallet.signaturesRequired();
       setSignaturesRequired(latestSignaturesRequired);
 
       const nonce = await readContracts.MultiSigWallet.nonce();
       setNonce(nonce);
+    } catch (error) {
+      console.error("Error fetching contract values:", error);
     }
+
+  }
+
+  useEffect(() => {
+
 
     if (currentMultiSigAddress) {
       readContracts.MultiSigWallet = new ethers.Contract(currentMultiSigAddress, multiSigWalletABI, localProvider);
@@ -373,7 +224,7 @@ function App(props) {
 
   // MultiSigWallet Events:
   const allExecuteTransactionEvents = useEventListener(
-    currentMultiSigAddress ? readContracts : null,
+    currentMultiSigAddress && readContracts.MultiSigWallet ? readContracts : null,
     contractNameForEvent,
     "ExecuteTransaction",
     localProvider,
@@ -382,7 +233,7 @@ function App(props) {
   if (DEBUG) console.log("📟 executeTransactionEvents:", allExecuteTransactionEvents);
 
   const allOwnerEvents = useEventListener(
-    currentMultiSigAddress ? readContracts : null,
+    currentMultiSigAddress && readContracts.MultiSigWallet ? readContracts : null,
     contractNameForEvent,
     "Owner",
     localProvider,
@@ -399,7 +250,7 @@ function App(props) {
 
   useEffect(() => {
     const filteredEvents = allExecuteTransactionEvents.filter(contractEvent => contractEvent.address === currentMultiSigAddress);
-    const nonceNum = typeof(nonce) === "number" ? nonce : nonce?.toNumber();
+    const nonceNum = typeof (nonce) === "number" ? nonce : nonce?.toNumber();
     if (nonceNum === filteredEvents.length) {
       setExecuteTransactionEvents(filteredEvents.reverse());
     }
@@ -407,50 +258,69 @@ function App(props) {
 
   // EXTERNAL CONTRACT EXAMPLE:
   // If you want to bring in the mainnet DAI contract it would look like:
-  const mainnetContracts = useContractLoader(mainnetProvider, contractConfig);
+  // const mainnetContracts = useContractLoader(mainnetProvider, contractConfig);
 
   // If you want to call a function on a new block
-  useOnBlock(mainnetProvider, () => {
-    console.log(`⛓ A new mainnet block is here: ${mainnetProvider._lastBlockNumber}`);
-  });
+  // useOnBlock(mainnetProvider, () => {
+  //   console.log(`⛓ A new mainnet block is here: ${mainnetProvider._lastBlockNumber}`);
+  // });
 
   // Then read your DAI balance like:
-  const myMainnetDAIBalance = useContractReader(mainnetContracts, "DAI", "balanceOf", [
-    "0x34aA3F359A9D614239015126635CE7732c18fDF3",
-  ]);
+  // const myMainnetDAIBalance = useContractReader(mainnetContracts, "DAI", "balanceOf", [
+  //   "0x34aA3F359A9D614239015126635CE7732c18fDF3",
+  // ]);
 
   /*
   const addressFromENS = useResolveName(mainnetProvider, "austingriffith.eth");
   console.log("🏷 Resolved austingriffith.eth as:",addressFromENS)
   */
-
   const loadWeb3Modal = useCallback(async () => {
-    const provider = await web3Modal.connect();
-    setInjectedProvider(new ethers.providers.Web3Provider(provider));
-
-    provider.on("chainChanged", chainId => {
-      console.log(`chain changed to ${chainId}! updating providers`);
+    try {
+      const provider = await web3Modal.connect();
       setInjectedProvider(new ethers.providers.Web3Provider(provider));
-    });
 
-    provider.on("accountsChanged", () => {
-      console.log(`account changed!`);
-      setInjectedProvider(new ethers.providers.Web3Provider(provider));
-    });
+      provider.on("chainChanged", chainId => {
+        console.log(`chain changed to ${chainId}! updating providers`);
+        setInjectedProvider(new ethers.providers.Web3Provider(provider));
+      });
 
-    // Subscribe to session disconnection
-    provider.on("disconnect", (code, reason) => {
-      console.log(code, reason);
-      logoutOfWeb3Modal();
-    });
-    // eslint-disable-next-line
+      provider.on("accountsChanged", () => {
+        console.log(`account changed!`);
+        setInjectedProvider(new ethers.providers.Web3Provider(provider));
+      });
+
+      provider.on("disconnect", (code, reason) => {
+        console.log("Disconnected:", code, reason);
+        logoutOfWeb3Modal();
+      });
+    } catch (error) {
+      console.error("Failed to load web3 modal:", error);
+    }
   }, [setInjectedProvider]);
 
   useEffect(() => {
     if (web3Modal.cachedProvider) {
       loadWeb3Modal();
     }
-  }, [loadWeb3Modal]);
+  }, []);
+
+  useEffect(() => {
+    async function initializeContracts() {
+      if (localProvider && userSigner) {
+        try {
+          readContracts.MultiSigWallet = new ethers.Contract(currentMultiSigAddress, multiSigWalletABI, localProvider);
+          writeContracts.MultiSigWallet = new ethers.Contract(currentMultiSigAddress, multiSigWalletABI, userSigner);
+
+          setContractNameForEvent("MultiSigWallet");
+          await getContractValues();
+        } catch (error) {
+          console.error("Error initializing contracts:", error);
+        }
+      }
+    }
+
+    initializeContracts();
+  }, [currentMultiSigAddress, localProvider, userSigner, readContracts, writeContracts]);
 
   const faucetAvailable = localProvider && localProvider.connection && targetNetwork.name.indexOf("local") !== -1;
 
@@ -461,7 +331,7 @@ function App(props) {
     setCurrentMultiSigAddress(value);
   };
 
-  console.log("currentMultiSigAddress:", currentMultiSigAddress);
+  // console.log("currentMultiSigAddress:", currentMultiSigAddress);
 
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
 
@@ -511,8 +381,8 @@ function App(props) {
               address={address}
               localProvider={localProvider}
               userSigner={userSigner}
-              mainnetProvider={mainnetProvider}
-              price={price}
+              // mainnetProvider={mainnetProvider}
+              // price={price}
               web3Modal={web3Modal}
               loadWeb3Modal={loadWeb3Modal}
               logoutOfWeb3Modal={logoutOfWeb3Modal}
@@ -536,9 +406,9 @@ function App(props) {
         <div style={{ position: "absolute", left: 20, display: "flex", flexDirection: "column", alignItems: "start" }}>
           <div>
             <CreateMultiSigModal
-              price={price}
+              // price={price}
               selectedChainId={selectedChainId}
-              mainnetProvider={mainnetProvider}
+              // mainnetProvider={mainnetProvider}
               address={address}
               tx={tx}
               writeContracts={writeContracts}
@@ -547,15 +417,15 @@ function App(props) {
               setIsCreateModalVisible={setIsCreateModalVisible}
             />
             <ImportMultiSigModal
-            mainnetProvider={mainnetProvider}
-            targetNetwork={targetNetwork}
-            networkOptions={selectNetworkOptions}
-            multiSigs={multiSigs}
-            setMultiSigs={setMultiSigs}
-            setCurrentMultiSigAddress={setCurrentMultiSigAddress}
-            multiSigWalletABI={multiSigWalletABI}
-            localProvider={localProvider}
-          />
+              // mainnetProvider={mainnetProvider}
+              targetNetwork={targetNetwork}
+              networkOptions={selectNetworkOptions}
+              multiSigs={multiSigs}
+              setMultiSigs={setMultiSigs}
+              setCurrentMultiSigAddress={setCurrentMultiSigAddress}
+              multiSigWalletABI={multiSigWalletABI}
+              localProvider={localProvider}
+            />
             <Select value={[currentMultiSigAddress]} style={{ width: 120, marginRight: 5, }} onChange={handleMultiSigChange}>
               {multiSigs.map((address, index) => (
                 <Option key={index} value={address}>
@@ -565,12 +435,12 @@ function App(props) {
             </Select>
             {networkSelect}
           </div>
-          
+
         </div>
       </div>
       <Menu
         disabled={!userHasMultiSigs}
-        style={{ textAlign: "center", marginTop: 40, fontSize:20 }}
+        style={{ textAlign: "center", marginTop: 40, fontSize: 20 }}
         selectedKeys={[location.pathname]}
         mode="horizontal"
       >
@@ -611,8 +481,8 @@ function App(props) {
             <Home
               contractAddress={currentMultiSigAddress}
               localProvider={localProvider}
-              price={price}
-              mainnetProvider={mainnetProvider}
+              // price={price}
+              // mainnetProvider={mainnetProvider}
               blockExplorer={blockExplorer}
               contractName={contractName}
               readContracts={readContracts}
@@ -626,9 +496,9 @@ function App(props) {
             poolServerUrl={BACKEND_URL}
             contractName={contractName}
             contractAddress={contractAddress}
-            mainnetProvider={mainnetProvider}
+            // mainnetProvider={mainnetProvider}
             localProvider={localProvider}
-            price={price}
+            // price={price}
             tx={tx}
             readContracts={readContracts}
             userSigner={userSigner}
@@ -646,10 +516,10 @@ function App(props) {
             contractName={contractName}
             address={address}
             userSigner={userSigner}
-            mainnetProvider={mainnetProvider}
+            // mainnetProvider={mainnetProvider}
             localProvider={localProvider}
             yourLocalBalance={yourLocalBalance}
-            price={price}
+            // price={price}
 
             tx={tx}
             writeContracts={writeContracts}
@@ -664,9 +534,9 @@ function App(props) {
             poolServerUrl={BACKEND_URL}
             contractName={contractName}
             contractAddress={contractAddress}
-            mainnetProvider={mainnetProvider}
+            // mainnetProvider={mainnetProvider}
             localProvider={localProvider}
-            price={price}
+            // price={price}
             tx={tx}
             readContracts={readContracts}
             userSigner={userSigner}
@@ -681,7 +551,7 @@ function App(props) {
         <Route exact path="/debug">
           <Contract
             name={"MultiSigFactory"}
-            price={price}
+            // price={price}
             signer={userSigner}
             provider={localProvider}
             address={address}
@@ -693,22 +563,22 @@ function App(props) {
           <Hints
             address={address}
             yourLocalBalance={yourLocalBalance}
-            mainnetProvider={mainnetProvider}
-            price={price}
+          // mainnetProvider={mainnetProvider}
+          // price={price}
           />
         </Route>
-        <Route path="/mainnetdai">
-          <Contract
+        {/* <Route path="/mainnetdai"> */}
+        {/* <Contract
             name="DAI"
             customContract={mainnetContracts && mainnetContracts.contracts && mainnetContracts.contracts.DAI}
             signer={userSigner}
-            provider={mainnetProvider}
+            // provider={mainnetProvider}
             address={address}
             blockExplorer="https://etherscan.io/"
             contractConfig={contractConfig}
             chainId={1}
-          />
-          {/*
+          /> */}
+        {/*
             <Contract
               name="UNI"
               customContract={mainnetContracts && mainnetContracts.contracts && mainnetContracts.contracts.UNI}
@@ -718,15 +588,15 @@ function App(props) {
               blockExplorer="https://etherscan.io/"
             />
             */}
-        </Route>
-        <Route path="/subgraph">
+        {/* </Route> */}
+        {/* <Route path="/subgraph">
           <Subgraph
             subgraphUri={props.subgraphUri}
             tx={tx}
             writeContracts={writeContracts}
-            mainnetProvider={mainnetProvider}
+          // mainnetProvider={mainnetProvider}
           />
-        </Route>
+        </Route> */}
       </Switch>
 
       <ThemeSwitch />
@@ -757,18 +627,7 @@ function App(props) {
           </Col>
         </Row> */}
 
-        <Row align="middle" gutter={[4, 4]}>
-          <Col span={24}>
-            {
-              /*  if the local provider has a signer, let's show the faucet:  */
-              faucetAvailable ? (
-                <Faucet localProvider={localProvider} price={price} ensProvider={mainnetProvider} />
-              ) : (
-                ""
-              )
-            }
-          </Col>
-        </Row>
+
       </div>
     </div>
   );

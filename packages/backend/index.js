@@ -52,3 +52,47 @@ if (fs.existsSync("server.key") && fs.existsSync("server.cert")) {
     console.log("HTTP Listening on port:", server.address().port);
   });
 }
+
+
+// Add this at the top of your backend file
+let userTokens = {};
+
+// Modify the route to handle token addition
+app.post("/addToken", function (request, response) {
+  const { address, chainId, tokenAddress, tokenName } = request.body;
+  const key = `${address}_${chainId}`;
+
+  if (!userTokens[key]) {
+    userTokens[key] = [];
+  }
+
+  const existingToken = userTokens[key].find(token => token.address === tokenAddress);
+  if (!existingToken) {
+    userTokens[key].push({ address: tokenAddress, name: tokenName });
+  }
+
+  console.log("User tokens:", userTokens);
+  response.status(200).send({ success: true, tokens: userTokens[key] });
+});
+
+// New removeToken route
+app.post("/removeToken", function (request, response) {
+  const { address, chainId, tokenAddress } = request.body;
+  const key = `${address}_${chainId}`;
+
+  if (userTokens[key]) {
+    userTokens[key] = userTokens[key].filter(token => token.address !== tokenAddress);
+  }
+
+  console.log("User tokens after removal:", userTokens);
+  response.status(200).send({ success: true, tokens: userTokens[key] });
+});
+
+
+// Modify the route to get user tokens
+app.get("/getUserTokens/:address/:chainId", function (req, res) {
+  const { address, chainId } = req.params;
+  const key = `${address}_${chainId}`;
+
+  res.status(200).send(userTokens[key] || []);
+});

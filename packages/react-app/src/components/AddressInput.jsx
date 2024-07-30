@@ -54,7 +54,7 @@ export default function AddressInput(props) {
               address = possibleAddress;
             }
             // eslint-disable-next-line no-empty
-          } catch (e) {}
+          } catch (e) { }
         }
         setValue(address);
         if (typeof onChange === "function") {

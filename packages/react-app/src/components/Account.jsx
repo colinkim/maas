@@ -48,7 +48,6 @@ export default function Account({
   userSigner,
   localProvider,
   mainnetProvider,
-  price,
   minimized,
   web3Modal,
   loadWeb3Modal,
@@ -74,13 +73,11 @@ export default function Account({
         display: "flex",
         alignItems: "center",
       }}>
-        <Balance address={address} provider={localProvider} price={price} size={"1.125rem"} />
+        <Balance address={address} provider={localProvider} size={"1.125rem"} />
         <Wallet
           address={address}
           provider={localProvider}
           signer={userSigner}
-          ensProvider={mainnetProvider}
-          price={price}
           color={currentTheme === "light" ? "#1890ff" : "#2caad9"}
           size={"1.4rem"}
           padding={"0px"}
@@ -95,7 +92,6 @@ export default function Account({
           {address && (
             <Address
               address={address}
-              ensProvider={mainnetProvider}
               blockExplorer={blockExplorer}
               fontSize={"1.125rem"}
               blockieSize={5}

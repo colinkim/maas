@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useHistory } from "react-router-dom";
-import { Button, Input, Select, InputNumber, Space, Tooltip,List } from "antd";
+import { Button, Input, Select, InputNumber, Space, Tooltip, List } from "antd";
 import { CodeOutlined } from '@ant-design/icons';
-import { AddressInput, EtherInput, WalletConnectInput, TransactionListItem }from "../components";
+import { AddressInput, EtherInput, WalletConnectInput, TransactionListItem } from "../components";
 import TransactionDetailsModal from "../components/MultiSig/TransactionDetailsModal";
 import { parseExternalContractTransaction } from "../helpers";
 import { useLocalStorage } from "../hooks";
@@ -40,11 +40,11 @@ export default function CreateTransaction({
 
   const [hasEdited, setHasEdited] = useState() //we want the signaturesRequired to update from the contract _until_ they edit it
 
-  useEffect(()=>{
-    if(!hasEdited){
+  useEffect(() => {
+    if (!hasEdited) {
       setNewSignaturesRequired(signaturesRequired)
     }
-  },[signaturesRequired])
+  }, [signaturesRequired])
 
   const showModal = () => {
     setIsModalVisible(true);
@@ -79,9 +79,9 @@ export default function CreateTransaction({
     try {
 
       //a little security in the frontend just because 
-      if(newSignaturesRequired<1){
+      if (newSignaturesRequired < 1) {
         alert("signatures required must be >= 1")
-      }else{
+      } else {
         setLoading(true)
 
         let callData;
@@ -145,7 +145,7 @@ export default function CreateTransaction({
       }
 
 
-    } catch(error) {
+    } catch (error) {
       console.log("Error: ", error);
       setLoading(false);
     }
@@ -154,7 +154,7 @@ export default function CreateTransaction({
   return (
     <div>
 
-      <div style={{ borderRadius:'4px', border: "1px solid #cccccc", padding: 16, width: 400, margin: "auto", marginTop: 64 }}>
+      <div style={{ borderRadius: '4px', border: "1px solid #cccccc", padding: 16, width: 400, margin: "auto", marginTop: 64 }}>
         <div style={{ margin: 8 }}>
           <div style={{ margin: 8, padding: 8 }}>
             <Select value={methodName} style={{ width: "100%" }} onChange={setMethodName}>
@@ -183,7 +183,7 @@ export default function CreateTransaction({
                 <AddressInput
                   autoFocus
                   ensProvider={mainnetProvider}
-                  placeholder={methodName == "transferFunds" ? "Recepient Address" : "Owner address"}
+                  placeholder={methodName == "transferFunds" ? "Recepient Address" : "Owner Address"}
                   value={to}
                   onChange={setTo}
                 />
@@ -194,7 +194,7 @@ export default function CreateTransaction({
                     style={{ width: "100%" }}
                     placeholder="New # of signatures required"
                     value={newSignaturesRequired}
-                    onChange={(value)=>{
+                    onChange={(value) => {
                       setNewSignaturesRequired(value)
                       setHasEdited(true)
                     }}
@@ -247,11 +247,11 @@ export default function CreateTransaction({
           )}
         </div>
 
-     
+
 
       </div>
     </div>
 
-    
+
   );
 }

@@ -1,7 +1,7 @@
-import { Button, Modal, Spin, Tooltip, Typography } from "antd";
+import { Button, Modal, Spin, Tooltip, Typography, Select, Input, message } from "antd";
 import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import { KeyOutlined, QrcodeOutlined, SendOutlined, WalletOutlined, CreditCardFilled  } from "@ant-design/icons";
+import { KeyOutlined, QrcodeOutlined, SendOutlined, WalletOutlined, CreditCardFilled } from "@ant-design/icons";
 import QR from "qrcode.react";
 
 import { Transactor } from "../helpers";
@@ -11,37 +11,32 @@ import Balance from "./Balance";
 import EtherInput from "./EtherInput";
 
 const { Text, Paragraph } = Typography;
+const { Option } = Select;
 
-/**
-  ~ What it does? ~
-
-  Displays a wallet where you can specify address and send USD/ETH, with options to
-  scan address, to convert between USD and ETH, to see and generate private keys,
-  to send, receive and extract the burner wallet
-
-  ~ How can I use? ~
-
-  <Wallet
-    provider={userProvider}
-    address={address}
-    ensProvider={mainnetProvider}
-    price={price}
-    color='red'
-  />
-
-  ~ Features ~
-
-  - Provide provider={userProvider} to display a wallet
-  - Provide address={address} if you want to specify address, otherwise
-                                                    your default address will be used
-  - Provide ensProvider={mainnetProvider} and your address will be replaced by ENS name
-              (ex. "0xa870" => "user.eth") or you can enter directly ENS name instead of address
-  - Provide price={price} of ether and easily convert between USD and ETH
-  - Provide color to specify the color of wallet icon
-**/
+// ABI for ERC20 token name and symbol functions
+const ERC20_ABI = [
+  {
+    constant: true,
+    inputs: [],
+    name: "name",
+    outputs: [{ name: "", type: "string" }],
+    type: "function",
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: "symbol",
+    outputs: [{ name: "", type: "string" }],
+    type: "function",
+  },
+];
 
 export default function Wallet(props) {
   const [signerAddress, setSignerAddress] = useState();
+  const [tokens, setTokens] = useState([]);
+  const [newTokenAddress, setNewTokenAddress] = useState('');
+  const [selectedToken, setSelectedToken] = useState(null);
+
   useEffect(() => {
     async function getAddress() {
       if (props.signer) {
@@ -52,13 +47,105 @@ export default function Wallet(props) {
     getAddress();
   }, [props.signer]);
 
+  useEffect(() => {
+    async function fetchUserTokens() {
+      if (props.provider && signerAddress) {
+        const network = await props.provider.getNetwork();
+        const chainId = network.chainId;
+        const response = await fetch(`http://localhost:49899/getUserTokens/${signerAddress}/${chainId}`);
+        const userTokens = await response.json();
+        setTokens(userTokens);
+
+        // Update localStorage
+        localStorage.setItem('userTokens', JSON.stringify(userTokens));
+
+      }
+    }
+    fetchUserTokens();
+
+    // Load selected token from localStorage
+    const storedSelectedToken = localStorage.getItem('selectedToken');
+    setSelectedToken(storedSelectedToken ? JSON.parse(storedSelectedToken) : null);
+  }, [props.provider, signerAddress]);
+
   const selectedAddress = props.address || signerAddress;
 
-  const [open, setOpen] = useState();
-  const [qr, setQr] = useState();
-  const [amount, setAmount] = useState();
-  const [toAddress, setToAddress] = useState();
-  const [pk, setPK] = useState();
+  const [open, setOpen] = useState(false);
+
+  const handleAddOrRemoveToken = async () => {
+    const existingToken = tokens.find(token => token.address === newTokenAddress);
+    if (existingToken) {
+      // Remove token
+      try {
+        const network = await props.provider.getNetwork();
+        const chainId = network.chainId;
+        const response = await fetch('http://localhost:49899/removeToken', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            address: signerAddress,
+            chainId,
+            tokenAddress: newTokenAddress
+          }),
+        });
+        const result = await response.json();
+        if (result.success) {
+          // Update localStorage
+          localStorage.setItem('selectedToken', "");
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error("Error removing token:", error);
+        message.error("Network error while removing token");
+      }
+    } else {
+      // Add token
+      try {
+        const tokenContract = new ethers.Contract(newTokenAddress, ERC20_ABI, props.provider);
+        const tokenName = await tokenContract.name();
+        const tokenSymbol = await tokenContract.symbol();
+
+        const network = await props.provider.getNetwork();
+        const chainId = network.chainId;
+        const response = await fetch('http://localhost:49899/addToken', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            address: signerAddress,
+            chainId,
+            tokenAddress: newTokenAddress,
+            tokenName: `${tokenName} (${tokenSymbol})`
+          }),
+        });
+        const result = await response.json();
+        if (result.success) {
+          setTokens(result.tokens);
+          setNewTokenAddress('');
+
+          // Update localStorage
+          localStorage.setItem('userTokens', JSON.stringify(result.tokens));
+        }
+      } catch (error) {
+        console.error("Error adding token:", error);
+        message.error("Invalid token address or network error");
+      }
+    }
+  };
+
+  const handleSelectToken = (value) => {
+    const selectedToken = value ? tokens.find(token => token.address === value) : null;
+    setSelectedToken(selectedToken);
+    localStorage.setItem('selectedToken', JSON.stringify(selectedToken));
+
+    // Wait 2 seconds before reloading the page
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000); // 2000 milliseconds = 2 seconds
+  };
 
   const providerSend = props.provider ? (
     <Tooltip title="Wallet">
@@ -79,214 +166,7 @@ export default function Wallet(props) {
     ""
   );
 
-  let display;
-  let receiveButton;
-  let privateKeyButton;
-  if (qr) {
-    display = (
-      <div>
-        <div>
-          <Text copyable>{selectedAddress}</Text>
-        </div>
-        <QR
-          value={selectedAddress}
-          size="450"
-          level="H"
-          includeMargin
-          renderAs="svg"
-          imageSettings={{ excavate: false }}
-        />
-      </div>
-    );
-    receiveButton = (
-      <Button
-        key="hide"
-        onClick={() => {
-          setQr("");
-        }}
-      >
-        <QrcodeOutlined /> Hide
-      </Button>
-    );
-    privateKeyButton = (
-      <Button
-        key="hide"
-        onClick={() => {
-          setPK(selectedAddress);
-          setQr("");
-        }}
-      >
-        <KeyOutlined /> Private Key
-      </Button>
-    );
-  } else if (pk) {
-    const pk = localStorage.getItem("metaPrivateKey");
-    const wallet = new ethers.Wallet(pk);
-
-    if (wallet.address !== selectedAddress) {
-      display = (
-        <div>
-          <b>*injected account*, private key unknown</b>
-        </div>
-      );
-    } else {
-      const extraPkDisplayAdded = {};
-      const extraPkDisplay = [];
-      extraPkDisplayAdded[wallet.address] = true;
-      extraPkDisplay.push(
-        <div style={{ fontSize: 16, padding: 2, backgroundStyle: "#89e789" }}>
-          <a href={"/pk#" + pk}>
-            <Address minimized address={wallet.address} ensProvider={props.ensProvider} /> {wallet.address.substr(0, 6)}
-          </a>
-        </div>,
-      );
-      for (const key in localStorage) {
-        if (key.indexOf("metaPrivateKey_backup") >= 0) {
-          console.log(key);
-          const pastpk = localStorage.getItem(key);
-          const pastwallet = new ethers.Wallet(pastpk);
-          if (!extraPkDisplayAdded[pastwallet.address] /* && selectedAddress!=pastwallet.address */) {
-            extraPkDisplayAdded[pastwallet.address] = true;
-            extraPkDisplay.push(
-              <div style={{ fontSize: 16 }}>
-                <a href={"/pk#" + pastpk}>
-                  <Address minimized address={pastwallet.address} ensProvider={props.ensProvider} />{" "}
-                  {pastwallet.address.substr(0, 6)}
-                </a>
-              </div>,
-            );
-          }
-        }
-      }
-
-      display = (
-        <div>
-          <b>Private Key:</b>
-
-          <div>
-            <Text copyable>{pk}</Text>
-          </div>
-
-          <hr />
-
-          <i>
-            Point your camera phone at qr code to open in
-            <a target="_blank" href={"https://xdai.io/" + pk} rel="noopener noreferrer">
-              burner wallet
-            </a>
-            :
-          </i>
-          <QR
-            value={"https://xdai.io/" + pk}
-            size="450"
-            level="H"
-            includeMargin
-            renderAs="svg"
-            imageSettings={{ excavate: false }}
-          />
-
-          <Paragraph style={{ fontSize: "16" }} copyable>
-            {"https://xdai.io/" + pk}
-          </Paragraph>
-
-          {extraPkDisplay ? (
-            <div>
-              <h3>Known Private Keys:</h3>
-              {extraPkDisplay}
-              <Button
-                onClick={() => {
-                  const currentPrivateKey = window.localStorage.getItem("metaPrivateKey");
-                  if (currentPrivateKey) {
-                    window.localStorage.setItem("metaPrivateKey_backup" + Date.now(), currentPrivateKey);
-                  }
-                  const randomWallet = ethers.Wallet.createRandom();
-                  const privateKey = randomWallet._signingKey().privateKey;
-                  window.localStorage.setItem("metaPrivateKey", privateKey);
-                  window.location.reload();
-                }}
-              >
-                Generate
-              </Button>
-            </div>
-          ) : (
-            ""
-          )}
-        </div>
-      );
-    }
-
-    receiveButton = (
-      <Button
-        key="receive"
-        onClick={() => {
-          setQr(selectedAddress);
-          setPK("");
-        }}
-      >
-        <QrcodeOutlined /> Receive
-      </Button>
-    );
-    privateKeyButton = (
-      <Button
-        key="hide"
-        onClick={() => {
-          setPK("");
-          setQr("");
-        }}
-      >
-        <KeyOutlined /> Hide
-      </Button>
-    );
-  } else {
-    const inputStyle = {
-      padding: 10,
-    };
-
-    display = (
-      <div>
-        <div style={inputStyle}>
-          <AddressInput
-            autoFocus
-            ensProvider={props.ensProvider}
-            placeholder="to address"
-            address={toAddress}
-            onChange={setToAddress}
-          />
-        </div>
-        <div style={inputStyle}>
-          <EtherInput
-            price={props.price}
-            value={amount}
-            onChange={value => {
-              setAmount(value);
-            }}
-          />
-        </div>
-      </div>
-    );
-    receiveButton = (
-      <Button
-        key="receive"
-        onClick={() => {
-          setQr(selectedAddress);
-          setPK("");
-        }}
-      >
-        <QrcodeOutlined /> Receive
-      </Button>
-    );
-    privateKeyButton = (
-      <Button
-        key="hide"
-        onClick={() => {
-          setPK(selectedAddress);
-          setQr("");
-        }}
-      >
-        <KeyOutlined /> Private Key
-      </Button>
-    );
-  }
+  const existingToken = tokens.find(token => token.address === newTokenAddress);
 
   return (
     <span>
@@ -294,53 +174,45 @@ export default function Wallet(props) {
       <Modal
         visible={open}
         title={
-          <div style={{  display: "flex", alignItems: "center", justifyContent: "space-around" }}>
-            {selectedAddress ? <Address address={selectedAddress} ensProvider={props.ensProvider} /> : <Spin />}
-            <Balance address={selectedAddress} provider={props.provider} dollarMultiplier={props.price} />
+          <div style={{ display: "", alignItems: "center", justifyContent: "space-around", padding: '15px' }}>
+            {selectedAddress ? <Address address={selectedAddress} /> : <Spin />}
+            <br />
+            <Balance
+              address={selectedAddress}
+              provider={props.provider}
+              selectedToken={selectedToken}
+            />
           </div>
         }
-        onOk={() => {
-          setQr();
-          setPK();
-          setOpen(!open);
-        }}
         onCancel={() => {
-          setQr();
-          setPK();
           setOpen(!open);
         }}
-        footer={[
-          privateKeyButton,
-          receiveButton,
-          <Button
-            key="submit"
-            type="primary"
-            disabled={!amount || !toAddress || qr}
-            loading={false}
-            onClick={() => {
-              const tx = Transactor(props.signer || props.provider);
-
-              let value;
-              try {
-                value = ethers.utils.parseEther("" + amount);
-              } catch (e) {
-                // failed to parseEther, try something else
-                value = ethers.utils.parseEther("" + parseFloat(amount).toFixed(8));
-              }
-
-              tx({
-                to: toAddress,
-                value,
-              });
-              setOpen(!open);
-              setQr();
-            }}
-          >
-            <SendOutlined /> Send
-          </Button>,
-        ]}
+        footer={null}
       >
-        {display}
+        <div style={{ marginBottom: '20px' }}>
+          <Select
+            style={{ width: '100%' }}
+            value={selectedToken ? selectedToken.address : ''}
+            onChange={handleSelectToken}
+            placeholder="Select token"
+          >
+            <Option value="">Native Coin</Option>
+            {tokens.map((token, index) => (
+              <Option key={index} value={token.address}>{token.name}</Option>
+            ))}
+          </Select>
+        </div>
+        <div style={{ display: 'flex', marginBottom: '20px' }}>
+          <Input
+            value={newTokenAddress}
+            onChange={(e) => setNewTokenAddress(e.target.value)}
+            placeholder="Enter ERC20 token address"
+            style={{ marginRight: '10px' }}
+          />
+          <Button onClick={handleAddOrRemoveToken}>
+            {existingToken ? "Remove Token" : "Add Token"}
+          </Button>
+        </div>
       </Modal>
     </span>
   );

@@ -26,6 +26,7 @@ export default function CreateMultiSigModal({
   const [signaturesRequired, setSignaturesRequired] = useState(false);
   const [amount, setAmount] = useState("0");
   const [owners, setOwners] = useState([""]);
+  const [walletName, setWalletName] = useState([""]);
 
   useEffect(() => {
     if (address) {
@@ -125,13 +126,13 @@ export default function CreateMultiSigModal({
         throw "Field validation failed.";
       }
 
-      if (!writeContracts ) {
+      if (!writeContracts) {
         throw new Error("writeContracts");
       }
-      if(!writeContracts[contractName]){
+      if (!writeContracts[contractName]) {
         throw new Error("writeContracts[contractName]");
       }
-      if(!writeContracts[contractName].create) {
+      if (!writeContracts[contractName].create) {
         throw new Error("Contract method 'create' is already created");
       }
 
@@ -213,13 +214,24 @@ export default function CreateMultiSigModal({
             value={multipleAddress}
           /> */}
 
+          <div style={{ width: "90%" }}>
+            <InputNumber
+              style={{ width: "100%" }}
+              placeholder="Wallet Name"
+              value={walletName}
+              onChange={setWalletName}
+            />
+          </div>
+
           {owners.map((owner, index) => (
             <div key={index} style={{ display: "flex", gap: "1rem" }}>
+
+
               <div style={{ width: "90%" }}>
                 <AddressInput
                   autoFocus
                   ensProvider={mainnetProvider}
-                  placeholder={"Owner address"}
+                  placeholder={"Owner Address"}
                   value={owner}
                   onChange={val => updateOwner(val, index)}
                 />
@@ -239,12 +251,12 @@ export default function CreateMultiSigModal({
           <div style={{ width: "90%" }}>
             <InputNumber
               style={{ width: "100%" }}
-              placeholder="Number of signatures required"
+              placeholder="Number of Signatures Required"
               value={signaturesRequired}
               onChange={setSignaturesRequired}
             />
           </div>
-          <div style={{ width: "90%" }}>
+          {/* <div style={{ width: "90%" }}>
             <EtherInput
               placeholder="Fund your multi-sig (optional)"
               price={price}
@@ -252,7 +264,7 @@ export default function CreateMultiSigModal({
               value={amount}
               onChange={setAmount}
             />
-          </div>
+          </div> */}
         </div>
       </Modal>
     </>

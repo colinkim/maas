@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Select, List, Spin, Collapse, Tag } from "antd";
 import { Address } from "..";
 
@@ -7,9 +7,12 @@ const { Panel } = Collapse;
 export default function Owners({
   ownerEvents,
   signaturesRequired,
-  mainnetProvider,
   blockExplorer
 }) {
+  if (!ownerEvents) {
+    return <Spin tip="Loading owner events..." />;
+  }
+
   const owners = new Set();
   const prevOwners = new Set();
   ownerEvents.forEach((ownerEvent) => {
@@ -25,12 +28,8 @@ export default function Owners({
   return (
     <div>
       <Tag style={{ width: 400, margin: "auto", }}>
-        <h2 style={{ paddingTop:"10px" }}>Threshold: {signaturesRequired ? signaturesRequired.toNumber() : <Spin></Spin>}</h2>
-
-
+        <h2 style={{ paddingTop: "10px" }}>Threshold: {signaturesRequired ? signaturesRequired.toNumber() : <Spin />}</h2>
       </Tag>
-
-
 
       <List
         header={<h2>Owners</h2>}
@@ -42,7 +41,6 @@ export default function Owners({
             <List.Item key={"owner_" + ownerAddress}>
               <Address
                 address={ownerAddress}
-                ensProvider={mainnetProvider}
                 blockExplorer={blockExplorer}
                 fontSize={16}
               />
@@ -51,8 +49,8 @@ export default function Owners({
         }}
       />
 
-      <Collapse collapsible={prevOwners.size == 0 ? "disabled" : ""} style={{ maxWidth: 400, margin: "auto", marginTop: 10, padding:"0px" }}>
-        <Panel           header={<span style={{ marginLeft: "0px",padding:"0px"}}><b>Previous Owners</b></span>}  key="1">
+      <Collapse collapsible={prevOwners.size === 0 ? "disabled" : ""} style={{ maxWidth: 400, margin: "auto", marginTop: 10, padding: "0px" }}>
+        <Panel header={<span style={{ marginLeft: "0px", padding: "0px" }}><b>Previous Owners</b></span>} key="1">
           <List
             dataSource={[...prevOwners]}
             style={{ maxWidth: 400, margin: "auto", }}
@@ -62,7 +60,6 @@ export default function Owners({
                 <List.Item key={"owner_" + prevOwnerAddress}>
                   <Address
                     address={prevOwnerAddress}
-                    ensProvider={mainnetProvider}
                     blockExplorer={blockExplorer}
                     fontSize={16}
                   />

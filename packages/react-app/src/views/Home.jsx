@@ -7,7 +7,6 @@ export default function Home({
   contractAddress,
   localProvider,
   price,
-  mainnetProvider,
   blockExplorer,
   executeTransactionEvents,
   contractName,
@@ -38,26 +37,26 @@ export default function Home({
             />
           </div>
 
-          <Tag style={{padding:'10px', width:400  }}>
+          <Tag style={{ padding: '10px', width: 400 }}>
 
-          <div style={{ display: "flex", justifyContent: "center" }}>
+            <div style={{ display: "flex", justifyContent: "center" }}>
 
-          <Address style={{padding:'30px' }}
-              address={contractAddress ? contractAddress : ""}
-              ensProvider={mainnetProvider}
-              blockExplorer={blockExplorer}
-              fontSize={24}
-            />
+              <Address style={{ padding: '30px' }}
+                address={contractAddress ? contractAddress : ""}
 
-    
-         
-          </div>
+                blockExplorer={blockExplorer}
+                fontSize={24}
+              />
+
+
+
+            </div>
 
           </Tag>
 
         </div>
-        <div style={{padding:16}}>
-        <Owners ownerEvents={ownerEvents} signaturesRequired={signaturesRequired} mainnetProvider={mainnetProvider} blockExplorer={blockExplorer} />
+        <div style={{ padding: 16 }}>
+          <Owners ownerEvents={ownerEvents} signaturesRequired={signaturesRequired} blockExplorer={blockExplorer} />
         </div>
         {/* <div style={{padding:64}}>
         <Button type={"primary"} onClick={()=>{
@@ -65,7 +64,7 @@ export default function Home({
         }}>Propose Transaction</Button>
         </div> */}
 
-    
+
       </div>
 
 

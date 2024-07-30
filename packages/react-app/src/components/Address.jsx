@@ -37,19 +37,19 @@ const blockExplorerLink = (address, blockExplorer) => `${blockExplorer || "https
 export default function Address(props) {
   const { currentTheme } = useThemeSwitcher();
   const address = props.value || props.address;
-  const ens = useLookupAddress(props.ensProvider, address);
-  const ensSplit = ens && ens.split(".");
-  const validEnsCheck = ensSplit && ensSplit[ensSplit.length - 1] === "eth";
+  // const ens = useLookupAddress(props.ensProvider, address);
+  // const ensSplit = ens && ens.split(".");
+  // const validEnsCheck = ensSplit && ensSplit[ensSplit.length - 1] === "eth";
   const etherscanLink = blockExplorerLink(address, props.blockExplorer);
   let displayAddress = address?.substr(0, 8) + "..." + address?.substr(-6);
 
-  if (validEnsCheck) {
-    displayAddress = ens;
-  } else if (props.size === "short") {
-    displayAddress += "..." + address.substr(-4);
-  } else if (props.size === "long") {
-    displayAddress = address;
-  }
+  // if (validEnsCheck) {
+  //   displayAddress = ens;
+  // } else if (props.size === "short") {
+  //   displayAddress += "..." + address.substr(-4);
+  // } else if (props.size === "long") {
+  //   displayAddress = address;
+  // }
 
   if (!address) {
     return (
@@ -78,7 +78,7 @@ export default function Address(props) {
     <div style={{ display: "flex", alignItems: "center" }}>
       <Blockies seed={address.toLowerCase()} size={props.blockieSize ? props.blockieSize : 8} scale={props.fontSize ? props.fontSize / 7 : 4} />
 
-      <span style={{paddingLeft: 8, fontSize: props.fontSize ? props.fontSize : 28 }}>
+      <span style={{ paddingLeft: 8, fontSize: props.fontSize ? props.fontSize : 28 }}>
         {props.onChange ? (
           <Text editable={{ onChange: props.onChange }} copyable={{ text: address }}>
             <a
@@ -91,7 +91,7 @@ export default function Address(props) {
             </a>
           </Text>
         ) : (
-          <Text copyable={{ text: address , icon: <CopyFilled />}}>
+          <Text copyable={{ text: address, icon: <CopyFilled /> }}>
             <a
               style={{ color: currentTheme === "light" ? "#222222" : "#ddd" }}
               target="_blank"
