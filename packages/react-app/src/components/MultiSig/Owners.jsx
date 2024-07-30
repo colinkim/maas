@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Select, List, Spin, Collapse } from "antd";
+import { Select, List, Spin, Collapse, Tag } from "antd";
 import { Address } from "..";
 
 const { Panel } = Collapse;
@@ -24,10 +24,17 @@ export default function Owners({
 
   return (
     <div>
-      <h2 style={{marginTop:32}}>Signatures Required: {signaturesRequired ? signaturesRequired.toNumber() :<Spin></Spin>}</h2>
+      <Tag style={{ width: 400, margin: "auto", }}>
+        <h2 style={{ paddingTop:"10px" }}>Threshold: {signaturesRequired ? signaturesRequired.toNumber() : <Spin></Spin>}</h2>
+
+
+      </Tag>
+
+
+
       <List
         header={<h2>Owners</h2>}
-        style={{maxWidth:400, margin:"auto", marginTop:32}}
+        style={{ maxWidth: 400, margin: "auto", marginTop: 16 }}
         bordered
         dataSource={[...owners]}
         renderItem={(ownerAddress) => {
@@ -37,17 +44,19 @@ export default function Owners({
                 address={ownerAddress}
                 ensProvider={mainnetProvider}
                 blockExplorer={blockExplorer}
-                fontSize={24}
+                fontSize={16}
               />
             </List.Item>
           )
         }}
       />
 
-      <Collapse collapsible={prevOwners.size == 0 ? "disabled" : ""} style={{maxWidth:400, margin:"auto", marginTop:10}}>
-        <Panel header="Previous Owners" key="1">
+      <Collapse collapsible={prevOwners.size == 0 ? "disabled" : ""} style={{ maxWidth: 400, margin: "auto", marginTop: 10, padding:"0px" }}>
+        <Panel           header={<span style={{ marginLeft: "0px",padding:"0px"}}><b>Previous Owners</b></span>}  key="1">
           <List
             dataSource={[...prevOwners]}
+            style={{ maxWidth: 400, margin: "auto", }}
+            bordered
             renderItem={(prevOwnerAddress) => {
               return (
                 <List.Item key={"owner_" + prevOwnerAddress}>
@@ -55,7 +64,7 @@ export default function Owners({
                     address={prevOwnerAddress}
                     ensProvider={mainnetProvider}
                     blockExplorer={blockExplorer}
-                    fontSize={24}
+                    fontSize={16}
                   />
                 </List.Item>
               )

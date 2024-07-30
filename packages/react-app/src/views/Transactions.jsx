@@ -93,7 +93,7 @@ export default function Transactions({
   return (
     <div style={{ maxWidth: 850, margin: "auto", marginTop: 32, marginBottom: 32 }}>
       <h1>
-        <b style={{ padding: 16 }}>#{nonce ? nonce.toNumber() : <Spin />}</b>
+        <b style={{ padding: 16 }}>Pending Transactions #{nonce ? nonce.toNumber() : <Spin />}</b>
       </h1>
 
       <List
@@ -177,9 +177,13 @@ export default function Transactions({
               </span>
             </div>
           </TransactionListItem>
+
+          
           );
         }}
       />
+
+      
     </div>
   );
 }

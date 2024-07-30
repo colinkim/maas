@@ -60,7 +60,7 @@ export default function TransactionListItem({ item, mainnetProvider, blockExplor
             <Address address={txnData[item.hash]?.args[0]} ensProvider={mainnetProvider} blockExplorer={blockExplorer} fontSize={16} />
           }
           <span style={{fontSize:16}}>
-            with threshold {txnData[item.hash]?.args[1]?.toNumber()}
+            Threshold: {txnData[item.hash]?.args[1]?.toNumber()}
           </span>
           <>
             {
@@ -81,7 +81,7 @@ export default function TransactionListItem({ item, mainnetProvider, blockExplor
             <Address address={txnData[item.hash]?.args[0]} ensProvider={mainnetProvider} blockExplorer={blockExplorer} fontSize={16} />
           }
           <span style={{fontSize:16}}>
-            with threshold {txnData[item.hash]?.args[1]?.toNumber()}
+          Threshold: {txnData[item.hash]?.args[1]?.toNumber()}
           </span>
           <>
             {
@@ -152,12 +152,12 @@ export default function TransactionListItem({ item, mainnetProvider, blockExplor
               children
             }
           </>
-          <Button
+          {/* <Button
             disabled={!txnData[item.hash]}
             onClick={showModal}
           >
             <EllipsisOutlined />
-          </Button>
+          </Button> */}
           <div
             style={{
               fontSize: 12,
@@ -182,14 +182,14 @@ export default function TransactionListItem({ item, mainnetProvider, blockExplor
   }
 
   return <>
-    <TransactionDetailsModal
+    {/* <TransactionDetailsModal
       visible={isModalVisible}
       txnInfo={txnData[item.hash]}
       handleOk={() => setIsModalVisible(false)}
       handleCancel={() => setIsModalVisible(false)}
       mainnetProvider={mainnetProvider}
       price={price}
-    />
+    /> */}
     {<List.Item
       key={item.hash}
       style={{ position: "relative", display: "flex", flexWrap: "wrap", width:800 }}

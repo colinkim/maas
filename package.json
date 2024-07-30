@@ -20,7 +20,7 @@
     "fork": "yarn workspace @scaffold-eth/hardhat fork",
     "node": "yarn workspace @scaffold-eth/hardhat chain",
     "test": "yarn workspace @scaffold-eth/hardhat test",
-    "start": "yarn workspace @scaffold-eth/react-app start",
+    "start": "NODE_OPTIONS=--openssl-legacy-provider yarn workspace @scaffold-eth/react-app start",
     "compile": "yarn workspace @scaffold-eth/hardhat compile",
     "deploy": "yarn workspace @scaffold-eth/hardhat deploy",
     "verify": "yarn workspace @scaffold-eth/hardhat verify",
@@ -68,9 +68,8 @@
       "**/hardhat-ts/**"
     ]
   },
-  "dependencies": {},
   "devDependencies": {
-    "husky": "^7.0.2",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "husky": "^7.0.2"
   }
 }

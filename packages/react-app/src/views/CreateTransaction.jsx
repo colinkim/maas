@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useHistory } from "react-router-dom";
-import { Button, Input, Select, InputNumber, Space, Tooltip } from "antd";
+import { Button, Input, Select, InputNumber, Space, Tooltip,List } from "antd";
 import { CodeOutlined } from '@ant-design/icons';
-import { AddressInput, EtherInput, WalletConnectInput } from "../components";
+import { AddressInput, EtherInput, WalletConnectInput, TransactionListItem }from "../components";
 import TransactionDetailsModal from "../components/MultiSig/TransactionDetailsModal";
 import { parseExternalContractTransaction } from "../helpers";
 import { useLocalStorage } from "../hooks";
@@ -23,6 +23,8 @@ export default function CreateTransaction({
   userSigner,
   nonce,
   signaturesRequired,
+  executeTransactionEvents,
+  blockExplorer,
 }) {
   const history = useHistory();
 
@@ -92,12 +94,23 @@ export default function CreateTransaction({
           executeToAddress = contractAddress;
         }
 
+        console.log("CREATE TRANSACTION\n")
+        console.log("nonce.toNumber()", nonce.toNumber())
+        console.log("amount", parseEther("" + parseFloat(amount).toFixed(12)))
+        console.log("callData", callData)
+        console.log("readContracts[contractName]", readContracts[contractName])
+        console.log("readContracts", readContracts)
+        console.log("contractName", contractName)
+
+        console.log("methodName", methodName)
+
         const newHash = await readContracts[contractName].getTransactionHash(
           nonce.toNumber(),
           executeToAddress,
           parseEther("" + parseFloat(amount).toFixed(12)),
           callData,
         );
+        console.log("newHash", newHash)
 
         const signature = await userSigner?.signMessage(ethers.utils.arrayify(newHash));
         console.log("signature: ", signature);
@@ -123,7 +136,7 @@ export default function CreateTransaction({
 
           console.log("RESULT", res.data);
           setTimeout(() => {
-            history.push("/pool");
+            history.push("/pending");
             setLoading(false);
           }, 1000);
         } else {
@@ -141,7 +154,7 @@ export default function CreateTransaction({
   return (
     <div>
 
-      <div style={{ border: "1px solid #cccccc", padding: 16, width: 400, margin: "auto", marginTop: 64 }}>
+      <div style={{ borderRadius:'4px', border: "1px solid #cccccc", padding: 16, width: 400, margin: "auto", marginTop: 64 }}>
         <div style={{ margin: 8 }}>
           <div style={{ margin: 8, padding: 8 }}>
             <Select value={methodName} style={{ width: "100%" }} onChange={setMethodName}>
@@ -170,7 +183,7 @@ export default function CreateTransaction({
                 <AddressInput
                   autoFocus
                   ensProvider={mainnetProvider}
-                  placeholder={methodName == "transferFunds" ? "Recepient address" : "Owner address"}
+                  placeholder={methodName == "transferFunds" ? "Recepient Address" : "Owner address"}
                   value={to}
                   onChange={setTo}
                 />
@@ -234,7 +247,11 @@ export default function CreateTransaction({
           )}
         </div>
 
+     
+
       </div>
     </div>
+
+    
   );
 }

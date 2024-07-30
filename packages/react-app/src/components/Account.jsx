@@ -69,7 +69,7 @@ export default function Account({
     <div style={{ display: "flex" }}>
       <div style={{
         border: "1px solid #d9d9d9",
-        borderRadius: "9999px",
+        borderRadius: "5px",
         paddingLeft: "0.875rem",
         display: "flex",
         alignItems: "center",
@@ -87,7 +87,7 @@ export default function Account({
         />
         <div style={{
           border: "1px solid transparent",
-          borderRadius: "9999px",
+          borderRadius: "5px",
           backgroundColor: currentTheme === "light" ? "#f1f5f9" : "#262626",
           marginLeft: "0.5rem",
           padding: "0.375rem 0.875rem",
@@ -105,7 +105,6 @@ export default function Account({
       </div>
       <Button
         style={{ verticalAlign: "top", marginLeft: 8, height: "auto" }}
-        shape="round"
         size="large"
         onClick={accountButton.action}
       >

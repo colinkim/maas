@@ -33,19 +33,19 @@ import externalContracts from "./contracts/external_contracts";
 // contracts
 import deployedContracts from "./contracts/hardhat_contracts.json";
 import { Transactor, Web3ModalSetup } from "./helpers";
-import { Home, Hints, Subgraph, CreateTransaction, Transactions } from "./views";
+import { Home, Hints, Subgraph, CreateTransaction, Transactions, TxHistory } from "./views";
 import { useStaticJsonRPC, useLocalStorage } from "./hooks";
 
 const { Option } = Select;
 const { ethers } = require("ethers");
 
 /// 📡 What chain are your contracts deployed to?
-const initialNetwork = NETWORKS.mainnet; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
+const initialNetwork = NETWORKS.polygonAmoy; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
 
 // 😬 Sorry for all the console logging
 const DEBUG = true;
 const NETWORKCHECK = true;
-const USE_BURNER_WALLET = true; // toggle burner wallet feature
+const USE_BURNER_WALLET = false; // toggle burner wallet feature
 const USE_NETWORK_SELECTOR = false;
 
 const web3Modal = Web3ModalSetup();
@@ -212,17 +212,17 @@ function App(props) {
 
   const cachedNetwork = window.localStorage.getItem("network");
   //let targetNetwork = NETWORKS[cachedNetwork || "mainnet"];
-  let targetNetwork = NETWORKS[cachedNetwork || "localhost"];
+  let targetNetwork = NETWORKS[cachedNetwork || "polygonAmoy"];
 
   // backend transaction handler:
-  let BACKEND_URL = "http://localhost:49899/";
+  let BACKEND_URL = "http://192.168.1.235:49899/";
   //kimcy
   //let BACKEND_URL = "http://localhost:8545/";
-  if (targetNetwork && targetNetwork.name && targetNetwork.name != "localhost") {
-    BACKEND_URL = "https://backend.multisig.lol:49899/";
-  }
+  // if (targetNetwork && targetNetwork.name && targetNetwork.name != "localhost") {
+  //   BACKEND_URL = "https://backend.multisig.lol:49899/";
+  // }
 
-  if(!targetNetwork) targetNetwork = NETWORKS["localhost"];
+  if(!targetNetwork) targetNetwork = NETWORKS["polygonAmoy"];
 
   // 🔭 block explorer URL
   const blockExplorer = targetNetwork.blockExplorer;
@@ -546,16 +546,7 @@ function App(props) {
               isCreateModalVisible={isCreateModalVisible}
               setIsCreateModalVisible={setIsCreateModalVisible}
             />
-            <Select value={[currentMultiSigAddress]} style={{ width: 120, marginRight: 5, }} onChange={handleMultiSigChange}>
-              {multiSigs.map((address, index) => (
-                <Option key={index} value={address}>
-                  {address}
-                </Option>
-              ))}
-            </Select>
-            {networkSelect}
-          </div>
-          <ImportMultiSigModal
+            <ImportMultiSigModal
             mainnetProvider={mainnetProvider}
             targetNetwork={targetNetwork}
             networkOptions={selectNetworkOptions}
@@ -565,22 +556,35 @@ function App(props) {
             multiSigWalletABI={multiSigWalletABI}
             localProvider={localProvider}
           />
+            <Select value={[currentMultiSigAddress]} style={{ width: 120, marginRight: 5, }} onChange={handleMultiSigChange}>
+              {multiSigs.map((address, index) => (
+                <Option key={index} value={address}>
+                  {address}
+                </Option>
+              ))}
+            </Select>
+            {networkSelect}
+          </div>
+          
         </div>
       </div>
       <Menu
         disabled={!userHasMultiSigs}
-        style={{ textAlign: "center", marginTop: 40 }}
+        style={{ textAlign: "center", marginTop: 40, fontSize:20 }}
         selectedKeys={[location.pathname]}
         mode="horizontal"
       >
         <Menu.Item key="/">
-          <Link to="/">MultiSig</Link>
+          <Link to="/">Wallet</Link>
         </Menu.Item>
-        <Menu.Item key="/create">
-          <Link to="/create">Propose Transaction</Link>
+        <Menu.Item key="/transactions">
+          <Link to="/transactions">Transactions</Link>
         </Menu.Item>
-        <Menu.Item key="/pool">
-          <Link to="/pool">Pool</Link>
+        <Menu.Item key="/pending">
+          <Link to="/pending">Pending</Link>
+        </Menu.Item>
+        <Menu.Item key="/history">
+          <Link to="/history">History</Link>
         </Menu.Item>
       </Menu>
 
@@ -610,7 +614,6 @@ function App(props) {
               price={price}
               mainnetProvider={mainnetProvider}
               blockExplorer={blockExplorer}
-              executeTransactionEvents={executeTransactionEvents}
               contractName={contractName}
               readContracts={readContracts}
               ownerEvents={ownerEvents}
@@ -618,7 +621,7 @@ function App(props) {
             />
           )}
         </Route>
-        <Route path="/create">
+        <Route path="/transactions">
           <CreateTransaction
             poolServerUrl={BACKEND_URL}
             contractName={contractName}
@@ -633,9 +636,11 @@ function App(props) {
             nonce={nonce}
             blockExplorer={blockExplorer}
             signaturesRequired={signaturesRequired}
+            executeTransactionEvents={executeTransactionEvents}
+
           />
         </Route>
-        <Route path="/pool">
+        <Route path="/pending">
           <Transactions
             poolServerUrl={BACKEND_URL}
             contractName={contractName}
@@ -645,12 +650,32 @@ function App(props) {
             localProvider={localProvider}
             yourLocalBalance={yourLocalBalance}
             price={price}
+
             tx={tx}
             writeContracts={writeContracts}
             readContracts={readContracts}
             blockExplorer={blockExplorer}
             nonce={nonce}
             signaturesRequired={signaturesRequired}
+          />
+        </Route>
+        <Route path="/history">
+          <TxHistory
+            poolServerUrl={BACKEND_URL}
+            contractName={contractName}
+            contractAddress={contractAddress}
+            mainnetProvider={mainnetProvider}
+            localProvider={localProvider}
+            price={price}
+            tx={tx}
+            readContracts={readContracts}
+            userSigner={userSigner}
+            DEBUG={DEBUG}
+            nonce={nonce}
+            blockExplorer={blockExplorer}
+            signaturesRequired={signaturesRequired}
+            executeTransactionEvents={executeTransactionEvents}
+
           />
         </Route>
         <Route exact path="/debug">
@@ -708,7 +733,7 @@ function App(props) {
 
       {/* 🗺 Extra UI like gas price, eth price, faucet, and support: */}
       <div style={{ position: "fixed", textAlign: "left", left: 0, bottom: 20, padding: 10 }}>
-        <Row align="middle" gutter={[4, 4]}>
+        {/* <Row align="middle" gutter={[4, 4]}>
           <Col span={8}>
             <Ramp price={price} address={address} networks={NETWORKS} />
           </Col>
@@ -730,7 +755,7 @@ function App(props) {
               Support
             </Button>
           </Col>
-        </Row>
+        </Row> */}
 
         <Row align="middle" gutter={[4, 4]}>
           <Col span={24}>

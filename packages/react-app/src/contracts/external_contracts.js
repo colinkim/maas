@@ -1035,6 +1035,24 @@ module.exports = {
       },
     },
   },
+  43113:{
+    contracts: {
+      MultiSigFactory: {
+        address: "0x6a85d3a8F4551C316A86330560141676D1705052", // deployed by gak in april 22, might want to update it to a newer version down the road
+        abi: MULTISIGABI,
+      },
+    },
+
+  },
+  80002:{
+    contracts: {
+      MultiSigFactory: {
+        address: "0x3117B2B43bF720Cce480dC078c0c8F85d0A09E45", 
+        abi: MULTISIGABI,
+      },
+    },
+
+  }
 
 
 };

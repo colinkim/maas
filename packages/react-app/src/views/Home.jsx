@@ -1,7 +1,7 @@
 import React from "react";
 import { Balance, Address, TransactionListItem, Owners } from "../components";
 import QR from "qrcode.react";
-import { List, Button } from "antd";
+import { List, Button, Flex, Tag } from "antd";
 
 export default function Home({
   contractAddress,
@@ -17,14 +17,14 @@ export default function Home({
 }) {
   return (
     <>
-      <div style={{ padding: 32, maxWidth: 850, margin: "auto" }}>
+      <div style={{ padding: 16, maxWidth: 850, margin: "auto" }}>
         <div style={{ paddingBottom: 32 }}>
           <div>
             <Balance
               address={contractAddress ? contractAddress : ""}
               provider={localProvider}
               dollarMultiplier={price}
-              size={64}
+              size={48}
             />
           </div>
           <div>
@@ -37,39 +37,35 @@ export default function Home({
               imageSettings={{ excavate: false }}
             />
           </div>
+
+          <Tag style={{padding:'10px', width:400  }}>
+
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <Address
+
+          <Address style={{padding:'30px' }}
               address={contractAddress ? contractAddress : ""}
               ensProvider={mainnetProvider}
               blockExplorer={blockExplorer}
-              fontSize={32}
+              fontSize={24}
             />
+
+    
+         
           </div>
+
+          </Tag>
+
         </div>
-        <div style={{padding:32}}>
+        <div style={{padding:16}}>
         <Owners ownerEvents={ownerEvents} signaturesRequired={signaturesRequired} mainnetProvider={mainnetProvider} blockExplorer={blockExplorer} />
         </div>
-        <div style={{padding:64}}>
+        {/* <div style={{padding:64}}>
         <Button type={"primary"} onClick={()=>{
-          window.location = "/create"
+          window.location = "/transactions"
         }}>Propose Transaction</Button>
-        </div>
-        <List
-          bordered
-          dataSource={executeTransactionEvents}
-          renderItem={item => {
-            return (
-              <TransactionListItem
-                item={Object.create(item)}
-                mainnetProvider={mainnetProvider}
-                blockExplorer={blockExplorer}
-                price={price}
-                readContracts={readContracts}
-                contractName={contractName}
-              />
-            );
-          }}
-        />
+        </div> */}
+
+    
       </div>
 
 

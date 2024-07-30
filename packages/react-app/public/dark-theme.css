@@ -4959,7 +4959,6 @@ a.ant-btn-sm {
 }
 .ant-collapse > .ant-collapse-item > .ant-collapse-header {
   position: relative;
-  padding: 12px 16px 12px 40px;
   color: rgba(255, 255, 255, 0.85);
   line-height: 1.5715;
   cursor: pointer;

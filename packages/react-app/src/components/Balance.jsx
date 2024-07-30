@@ -32,8 +32,10 @@ const zero = BigNumber.from(0);
 **/
 
 export default function Balance(props) {
-  const [dollarMode, setDollarMode] = useState(true);
+  const [dollarMode, setDollarMode] = useState(false);
   const [balance, setBalance] = useState();
+  const [symbol, setSymbol] = useState();
+
   const {provider, address} = props;
 
   const balanceContract = useBalance(props.provider, props.address);
@@ -44,7 +46,37 @@ export default function Balance(props) {
   useEffect(() => {
     async function getBalance() {
       if (provider && address) {
+
+        const network = await provider.getNetwork();
+        const chainId = network.chainId;
+
+
+        // Fetch the list of known networks
+        const response = await fetch('https://chainid.network/chains.json');
+        const networks = await response.json();
+
+        // Find the network details based on the chain ID
+        const networkDetails = networks.find(net => net.chainId === chainId);
+
+        // Define a variable for the native currency symbol
+        let nativeCurrencySymbol = "Unknown";
+
+        // If the network is found, get the native currency symbol
+        if (networkDetails && networkDetails.nativeCurrency) {
+            nativeCurrencySymbol = networkDetails.nativeCurrency.symbol;
+        }
+        setSymbol(nativeCurrencySymbol)
+
+
         const newBalance = await provider.getBalance(address);
+        console.log('\n\n');
+        console.log('BALANCE INFORMATION');
+        console.log('chainId', chainId);
+        console.log('networkDetails', networkDetails);
+        console.log('nativeCurrencySymbol', nativeCurrencySymbol);
+        console.log('newBalance', newBalance);
+   
+
         if (!newBalance.eq(balance ?? zero)) {
           setBalance(newBalance);
         }
@@ -81,11 +113,9 @@ export default function Balance(props) {
         padding: "0 0.5rem",
         cursor: "pointer",
       }}
-      onClick={() => {
-        setDollarMode(!dollarMode);
-      }}
+   
     >
-      {displayBalance}
+      {displayBalance} <b>{symbol}</b>
     </span>
   );
 }

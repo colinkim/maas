@@ -16,6 +16,7 @@ app.get("/", function (req, res) {
   console.log("/");
   res.status(200).send("hello world");
 });
+
 app.get("/:key", function (req, res) {
   let key = req.params.key;
   console.log("/", key);
@@ -43,7 +44,7 @@ if (fs.existsSync("server.key") && fs.existsSync("server.cert")) {
       },
       app
     )
-    .listen(49899, () => {
+    .listen(49899, "0.0.0.0", () => {
       console.log("HTTPS Listening: 49899");
     });
 } else {

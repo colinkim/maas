@@ -62,7 +62,7 @@ export default function ImportMultiSigModal({
 
   return (
     <>
-      <Button type="link" onClick={ () => setIsModalVisible(true) }>Import</Button>
+      <Button type="primary" style={{ marginRight: 10 }} onClick={ () => setIsModalVisible(true) }>Import</Button>
       <Modal
         title="Import Multisig"
         visible={isModalVisible}

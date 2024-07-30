@@ -3,6 +3,7 @@ import React from "react";
 import { useThemeSwitcher } from "react-css-theme-switcher";
 import Blockies from "react-blockies";
 import { useLookupAddress } from "eth-hooks/dapps/ens";
+import { CopyFilled } from "@ant-design/icons";
 
 // changed value={address} to address={address}
 
@@ -40,7 +41,7 @@ export default function Address(props) {
   const ensSplit = ens && ens.split(".");
   const validEnsCheck = ensSplit && ensSplit[ensSplit.length - 1] === "eth";
   const etherscanLink = blockExplorerLink(address, props.blockExplorer);
-  let displayAddress = address?.substr(0, 5) + "..." + address?.substr(-4);
+  let displayAddress = address?.substr(0, 8) + "..." + address?.substr(-6);
 
   if (validEnsCheck) {
     displayAddress = ens;
@@ -76,7 +77,8 @@ export default function Address(props) {
   return (
     <div style={{ display: "flex", alignItems: "center" }}>
       <Blockies seed={address.toLowerCase()} size={props.blockieSize ? props.blockieSize : 8} scale={props.fontSize ? props.fontSize / 7 : 4} />
-      <span style={{paddingLeft: 5, fontSize: props.fontSize ? props.fontSize : 28 }}>
+
+      <span style={{paddingLeft: 8, fontSize: props.fontSize ? props.fontSize : 28 }}>
         {props.onChange ? (
           <Text editable={{ onChange: props.onChange }} copyable={{ text: address }}>
             <a
@@ -89,7 +91,7 @@ export default function Address(props) {
             </a>
           </Text>
         ) : (
-          <Text copyable={{ text: address }}>
+          <Text copyable={{ text: address , icon: <CopyFilled />}}>
             <a
               style={{ color: currentTheme === "light" ? "#222222" : "#ddd" }}
               target="_blank"

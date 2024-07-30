@@ -134,6 +134,14 @@ export default function CreateMultiSigModal({
       if(!writeContracts[contractName].create) {
         throw new Error("Contract method 'create' is already created");
       }
+
+      console.log("\n\n\n\n")
+      console.log("writeContracts", writeContracts)
+      console.log("writeContracts[contractName]", writeContracts[contractName])
+      console.log("writeContracts[contractName].create", writeContracts[contractName].create)
+      console.log("selectedChainId", selectedChainId)
+      console.log("owners", owners)
+      console.log("signaturesRequired", signaturesRequired)
       tx(
         writeContracts[contractName].create(selectedChainId, owners, signaturesRequired, {
           value: ethers.utils.parseEther("" + parseFloat(amount).toFixed(12)),
