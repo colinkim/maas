@@ -96,3 +96,58 @@ app.get("/getUserTokens/:address/:chainId", function (req, res) {
 
   res.status(200).send(userTokens[key] || []);
 });
+
+
+// Add this at the top of your backend file
+let userWallets = {};
+
+// Modify the route to handle token addition
+app.post("/addWallet", function (request, response) {
+  const { userAddress, chainId, multiSigWalletAddress, walletName } = request.body;
+  const key = `${userAddress}_${chainId}`;
+
+  if (!userWallets[key]) {
+    userWallets[key] = [];
+  }
+
+  const existingWallet = userWallets[key].find(wallet => wallet.multiSigWalletAddress === multiSigWalletAddress);
+  if (!existingWallet) {
+    userWallets[key].push({ multiSigWalletAddress: multiSigWalletAddress, walletName: walletName });
+  }
+
+  console.log("User Wallets:", userWallets);
+  response.status(200).send({ success: true, wallets: userWallets[key] });
+});
+
+// Modify the route to get user tokens
+app.get("/getUserWallets/:address/:chainId", function (req, res) {
+  const { address, chainId } = req.params;
+  const key = `${address}_${chainId}`;
+
+  res.status(200).send(userWallets[key] || []);
+});
+
+
+const userMultiSigWallets = {};
+
+app.post("/addMultiSigWallet", function (request, response) {
+  const { address, chainId, name, ownerAddress } = request.body;
+  const key = `${ownerAddress}_${chainId}`;
+
+  if (!userMultiSigWallets[key]) {
+    userMultiSigWallets[key] = {};
+  }
+
+  userMultiSigWallets[key][address] = name;
+
+  console.log("User multi-sig wallets:", userMultiSigWallets);
+  response.status(200).send({ success: true });
+});
+
+app.get("/getMultiSigWallets/:address/:chainId", function (request, response) {
+  const { address, chainId } = request.params;
+  const key = `${address}_${chainId}`;
+
+  const wallets = userMultiSigWallets[key] || {};
+  response.status(200).send(wallets);
+});

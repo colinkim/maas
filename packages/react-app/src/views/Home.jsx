@@ -11,7 +11,8 @@ export default function Home({
   executeTransactionEvents,
   contractName,
   readContracts,
-  ownerEvents,
+  walletName,
+  currentOwners,
   signaturesRequired,
 }) {
   return (
@@ -36,8 +37,20 @@ export default function Home({
               imageSettings={{ excavate: false }}
             />
           </div>
+          <hr style={{ width: 200, borderColor: '#fafafa' }}></hr>
+
+          <div style={{ marginBottom: "-15px", justifyContent: "center" }}>
+
+
+
+
+
+
+          </div>
+
 
           <Tag style={{ padding: '10px', width: 400 }}>
+            <p style={{ fontSize: '24px', marginBottom: '5px' }}><b>{walletName}</b></p>
 
             <div style={{ display: "flex", justifyContent: "center" }}>
 
@@ -45,7 +58,7 @@ export default function Home({
                 address={contractAddress ? contractAddress : ""}
 
                 blockExplorer={blockExplorer}
-                fontSize={24}
+                fontSize={18}
               />
 
 
@@ -56,7 +69,7 @@ export default function Home({
 
         </div>
         <div style={{ padding: 16 }}>
-          <Owners ownerEvents={ownerEvents} signaturesRequired={signaturesRequired} blockExplorer={blockExplorer} />
+          <Owners currentOwners={currentOwners} signaturesRequired={signaturesRequired} blockExplorer={blockExplorer} />
         </div>
         {/* <div style={{padding:64}}>
         <Button type={"primary"} onClick={()=>{

@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { Button, Modal, Select, Alert } from "antd";
 import { ethers } from "ethers";
 import { useLocalStorage } from "../../hooks";
+import { Input } from "antd";
 
 import { AddressInput } from "..";
 
 export default function ImportMultiSigModal({
+  ownerAddress,
   mainnetProvider,
   targetNetwork,
   networkOptions,
@@ -21,6 +23,7 @@ export default function ImportMultiSigModal({
   const [error, setError] = useState(false);
   const [address, setAddress] = useState();
   const [network, setNetwork] = useState(targetNetwork.name);
+  const [walletName, setWalletName] = useState([""]);
 
   const resetState = () => {
     setError(false);
@@ -28,6 +31,7 @@ export default function ImportMultiSigModal({
     setNetwork(targetNetwork.name);
     setPendingImport(false);
   };
+  let BACKEND_URL = process.env.REACT_APP_BACKEND_SERVER;
 
   const handleCancel = () => {
     resetState();
@@ -39,22 +43,44 @@ export default function ImportMultiSigModal({
       setPendingImport(true);
 
       const contract = new ethers.Contract(address, multiSigWalletABI, localProvider);
-      await contract.signaturesRequired();
+      await contract.getOwners();
 
-      let newImportedMultiSigs = importedMultiSigs || {};
-      (newImportedMultiSigs[network] = newImportedMultiSigs[network] || []).push(address);
-      newImportedMultiSigs[network] = [...new Set(newImportedMultiSigs[network])];
-      setImportedMultiSigs(newImportedMultiSigs);
+      const response = await fetch(`${BACKEND_URL}addMultiSigWallet`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address: address,
+          chainId: targetNetwork.chainId,
+          name: walletName,
+          ownerAddress: ownerAddress,
+        }),
+      });
 
-      if (network === targetNetwork.name) {
-        setMultiSigs([...new Set([...newImportedMultiSigs[network], ...multiSigs])]);
-        setCurrentMultiSigAddress(address);
+      const result = await response.json();
+      if (result.success) {
+        // Store in localStorage
+
+        let newImportedMultiSigs = importedMultiSigs || {};
+        (newImportedMultiSigs[network] = newImportedMultiSigs[network] || []).push(address);
+        newImportedMultiSigs[network] = [...new Set(newImportedMultiSigs[network])];
+        setImportedMultiSigs(newImportedMultiSigs);
+
+        if (network === targetNetwork.name) {
+          setMultiSigs([...new Set([...newImportedMultiSigs[network], ...multiSigs])]);
+          setCurrentMultiSigAddress(address);
+        }
+
+        resetState();
+        setIsModalVisible(false);
+        setTimeout(() => {
+          window.location.reload();
+        }, 2500);
+
       }
-
-      resetState();
-      setIsModalVisible(false);
-    } catch(e) {
-      console.log("Import error:", e);
+    } catch (e) {
+      console.error("IMPORT MULTI-SIG FAILED: ", e);
       setError(true);
       setPendingImport(false);
     }
@@ -62,7 +88,7 @@ export default function ImportMultiSigModal({
 
   return (
     <>
-      <Button type="primary" style={{ marginRight: 10 }} onClick={ () => setIsModalVisible(true) }>Import</Button>
+      <Button type="primary" style={{ marginRight: 10 }} onClick={() => setIsModalVisible(true)}>Import</Button>
       <Modal
         title="Import Multisig"
         visible={isModalVisible}
@@ -83,21 +109,30 @@ export default function ImportMultiSigModal({
           </Button>,
         ]}
       >
+
+
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+
+          <Input
+            placeholder="Wallet Name"
+            value={walletName}
+            onChange={(e) => setWalletName(e.target.value)}
+          />
+
           <AddressInput
             autoFocus
             ensProvider={mainnetProvider}
-            placeholder={"Multisig address"}
+            placeholder={"MultiSig Wallet Address"}
             value={address}
             onChange={setAddress}
           />
           <Select
             defaultValue={targetNetwork.name}
-            onChange={ value => setNetwork(value) }
+            onChange={value => setNetwork(value)}
           >
             {networkOptions}
           </Select>
-          { error && <Alert message="Unable to import: this doesn't seem like a multisig." type="error" showIcon /> }
+          {error && <Alert message="Unable to import: this doesn't seem like a multisig." type="error" showIcon />}
         </div>
       </Modal>
     </>

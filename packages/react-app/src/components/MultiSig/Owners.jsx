@@ -5,24 +5,18 @@ import { Address } from "..";
 const { Panel } = Collapse;
 
 export default function Owners({
-  ownerEvents,
+  currentOwners,
   signaturesRequired,
   blockExplorer
 }) {
-  if (!ownerEvents) {
-    return <Spin tip="Loading owner events..." />;
+  if (!currentOwners) {
+    return <Spin tip="Loading Owners..." />;
   }
 
   const owners = new Set();
   const prevOwners = new Set();
-  ownerEvents.forEach((ownerEvent) => {
-    if (ownerEvent.args.added) {
-      owners.add(ownerEvent.args.owner);
-      prevOwners.delete(ownerEvent.args.owner)
-    } else {
-      prevOwners.add(ownerEvent.args.owner)
-      owners.delete(ownerEvent.args.owner);
-    }
+  currentOwners.forEach((owner) => {
+    owners.add(owner);
   });
 
   return (

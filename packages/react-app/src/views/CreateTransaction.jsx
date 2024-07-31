@@ -21,7 +21,6 @@ export default function CreateTransaction({
   price,
   readContracts,
   userSigner,
-  nonce,
   signaturesRequired,
   executeTransactionEvents,
   blockExplorer,
@@ -36,8 +35,6 @@ export default function CreateTransaction({
   const [parsedCustomCallData, setParsedCustomCallData] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isWalletConnectTransaction, setIsWalletConnectTransaction] = useState(false);
-
   const [hasEdited, setHasEdited] = useState() //we want the signaturesRequired to update from the contract _until_ they edit it
 
   useEffect(() => {
@@ -54,26 +51,16 @@ export default function CreateTransaction({
     padding: 10,
   };
 
-  useEffect(() => {
-    const getParsedTransaction = async () => {
-      const parsedTransaction = await parseExternalContractTransaction(to, customCallData);
-      setParsedCustomCallData(parsedTransaction);
-    }
+  // useEffect(() => {
+  //   const getParsedTransaction = async () => {
+  //     const parsedTransaction = await parseExternalContractTransaction(to, customCallData);
+  //     setParsedCustomCallData(parsedTransaction);
+  //   }
 
-    getParsedTransaction();
-  }, [customCallData]);
+  //   getParsedTransaction();
+  // }, [customCallData]);
 
-  const loadWalletConnectData = ({ to, value, data }) => {
-    setTo(to);
-    value ? setAmount(ethers.utils.formatEther(value)) : setAmount("0");
-    setCustomCallData(data);
-    setIsWalletConnectTransaction(true);
-  };
 
-  useEffect(() => {
-    isWalletConnectTransaction && createTransaction();
-    setIsWalletConnectTransaction(false);
-  }, [isWalletConnectTransaction]);
 
   const createTransaction = async () => {
     try {
@@ -86,16 +73,19 @@ export default function CreateTransaction({
 
         let callData;
         let executeToAddress;
-        if (methodName == "transferFunds" || methodName == "customCallData" || methodName == "wcCallData") {
-          callData = methodName == "transferFunds" ? "0x" : customCallData;
-          executeToAddress = to;
-        } else {
-          callData = readContracts[contractName]?.interface?.encodeFunctionData(methodName, [to, newSignaturesRequired]);
-          executeToAddress = contractAddress;
-        }
+        // if (methodName == "transferFunds" || methodName == "customCallData" || methodName == "wcCallData") {
+        //   callData = methodName == "transferFunds" ? "0x" : customCallData;
+        //   executeToAddress = to;
+        // } else {
+        //   executeToAddress = contractAddress;
+        // }
+
+
+        callData = readContracts[contractName]?.interface?.encodeFunctionData("transfer", [to, parseFloat(amount).toFixed(12)]);
+
+
 
         console.log("CREATE TRANSACTION\n")
-        console.log("nonce.toNumber()", nonce.toNumber())
         console.log("amount", parseEther("" + parseFloat(amount).toFixed(12)))
         console.log("callData", callData)
         console.log("readContracts[contractName]", readContracts[contractName])
@@ -105,7 +95,6 @@ export default function CreateTransaction({
         console.log("methodName", methodName)
 
         const newHash = await readContracts[contractName].getTransactionHash(
-          nonce.toNumber(),
           executeToAddress,
           parseEther("" + parseFloat(amount).toFixed(12)),
           callData,
@@ -125,7 +114,6 @@ export default function CreateTransaction({
           const res = await axios.post(poolServerUrl, {
             chainId: localProvider._network.chainId,
             address: readContracts[contractName]?.address,
-            nonce: nonce.toNumber(),
             to: executeToAddress,
             amount,
             data: callData,
@@ -158,93 +146,83 @@ export default function CreateTransaction({
         <div style={{ margin: 8 }}>
           <div style={{ margin: 8, padding: 8 }}>
             <Select value={methodName} style={{ width: "100%" }} onChange={setMethodName}>
-              <Option key="transferFunds">Send ETH</Option>
-              <Option key="addSigner">Add Signer</Option>
-              <Option key="removeSigner">Remove Signer</Option>
-              <Option key="customCallData">Custom Call Data</Option>
+              <Option key="transferFunds">Send Transaction</Option>
+              <Option key="addOwner">Add Owner</Option>
+              <Option key="removeOwner">Remove Owner</Option>
+              {/* <Option key="customCallData">Custom Call Data</Option>
               <Option key="wcCallData">
                 <img src="walletconnect-logo.svg" style={{ height: 20, width: 20 }} /> WalletConnect
-              </Option>
+              </Option> */}
             </Select>
           </div>
-          {methodName == "wcCallData" ? (
+          <>
             <div style={inputStyle}>
-              <WalletConnectInput
-                chainId={localProvider?._network.chainId}
-                address={contractAddress}
-                loadWalletConnectData={loadWalletConnectData}
-                mainnetProvider={mainnetProvider}
-                price={price}
+              <AddressInput
+                autoFocus
+                ensProvider={mainnetProvider}
+                placeholder={methodName == "transferFunds" ? "Recepient Address" : "Owner Address"}
+                value={to}
+                onChange={setTo}
               />
             </div>
-          ) : (
-            <>
-              <div style={inputStyle}>
-                <AddressInput
-                  autoFocus
-                  ensProvider={mainnetProvider}
-                  placeholder={methodName == "transferFunds" ? "Recepient Address" : "Owner Address"}
-                  value={to}
-                  onChange={setTo}
+            <div style={inputStyle}>
+              {(methodName == "addOwner" || methodName == "removeOwner") &&
+                <InputNumber
+                  style={{ width: "100%" }}
+                  placeholder="New # of signatures required"
+                  value={newSignaturesRequired}
+                  onChange={(value) => {
+                    setNewSignaturesRequired(value)
+                    setHasEdited(true)
+                  }}
                 />
-              </div>
-              <div style={inputStyle}>
-                {(methodName == "addSigner" || methodName == "removeSigner") &&
-                  <InputNumber
-                    style={{ width: "100%" }}
-                    placeholder="New # of signatures required"
-                    value={newSignaturesRequired}
-                    onChange={(value) => {
-                      setNewSignaturesRequired(value)
-                      setHasEdited(true)
-                    }}
-                  />
-                }
-                {methodName == "customCallData" &&
-                  <>
-                    <Input.Group compact>
-                      <Input
-                        style={{ width: 'calc(100% - 31px)', marginBottom: 20 }}
-                        placeholder="Custom call data"
-                        value={customCallData}
-                        onChange={e => {
-                          setCustomCallData(e.target.value);
-                        }}
-                      />
-                      <Tooltip title="Parse transaction data">
-                        <Button onClick={showModal} icon={<CodeOutlined />} />
-                      </Tooltip>
-                    </Input.Group>
-                    <TransactionDetailsModal
-                      visible={isModalVisible}
-                      txnInfo={parsedCustomCallData}
-                      handleOk={() => setIsModalVisible(false)}
-                      handleCancel={() => setIsModalVisible(false)}
-                      mainnetProvider={mainnetProvider}
-                      price={price}
+              }
+              {methodName == "customCallData" &&
+                <>
+                  <Input.Group compact>
+                    <Input
+                      style={{ width: 'calc(100% - 31px)', marginBottom: 20 }}
+                      placeholder="Custom call data"
+                      value={customCallData}
+                      onChange={e => {
+                        setCustomCallData(e.target.value);
+                      }}
                     />
-                  </>
-                }
-                {(methodName == "transferFunds" || methodName == "customCallData") &&
-                  <EtherInput
+                    <Tooltip title="Parse transaction data">
+                      <Button onClick={showModal} icon={<CodeOutlined />} />
+                    </Tooltip>
+                  </Input.Group>
+                  <TransactionDetailsModal
+                    visible={isModalVisible}
+                    txnInfo={parsedCustomCallData}
+                    handleOk={() => setIsModalVisible(false)}
+                    handleCancel={() => setIsModalVisible(false)}
+                    mainnetProvider={mainnetProvider}
                     price={price}
-                    mode="USD"
-                    value={amount}
-                    onChange={setAmount}
                   />
-                }
-              </div>
-              <Space style={{ marginTop: 32 }}>
-                <Button
-                  loading={loading}
-                  onClick={createTransaction}
-                  type="primary"
-                >
-                  Propose
-                </Button>
-              </Space>
-            </>
-          )}
+                </>
+              }
+              {(methodName == "transferFunds" || methodName == "customCallData") &&
+                <InputNumber
+                  style={{ width: "100%" }}
+                  placeholder="Amount to Send"
+                  onChange={(value) => {
+                    setAmount(value)
+                  }}
+
+                />
+              }
+            </div>
+            <Space style={{ marginTop: 32 }}>
+              <Button
+                loading={loading}
+                onClick={createTransaction}
+                type="primary"
+              >
+                Propose
+              </Button>
+            </Space>
+          </>
         </div>
 
 

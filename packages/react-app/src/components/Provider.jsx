@@ -12,7 +12,6 @@ export default function Provider(props) {
   const [signer, setSigner] = useState();
   const [address, setAddress] = useState();
 
-  const blockNumber = useBlockNumber(props.provider);
 
   usePoller(async () => {
     if (props.provider && typeof props.provider.getNetwork === "function") {
@@ -34,7 +33,7 @@ export default function Provider(props) {
         const newAddress = await newSigner.getAddress();
         setAddress(newAddress);
         // eslint-disable-next-line no-empty
-      } catch (e) {}
+      } catch (e) { }
     }
   }, 1377);
 
@@ -92,7 +91,7 @@ export default function Provider(props) {
         setShowMore(!showMore);
       }}
     >
-      <Badge status={status} /> {props.name} {showWallet} #{blockNumber} {showExtra}
+      <Badge status={status} /> {props.name} {showWallet}  {showExtra}
     </Button>
   );
 }

@@ -786,179 +786,120 @@ const DAIABI = [
 
 const MULTISIGABI = [
   {
-    inputs: [],
-    stateMutability: "nonpayable",
-    type: "constructor",
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "instantiation",
+        "type": "address"
+      }
+    ],
+    "name": "ContractInstantiation",
+    "type": "event"
   },
   {
-    anonymous: false,
-    inputs: [
+    "inputs": [
       {
-        indexed: true,
-        internalType: "uint256",
-        name: "contractId",
-        type: "uint256",
+        "internalType": "enum WALLET_KIND",
+        "name": "kind",
+        "type": "uint8"
       },
       {
-        indexed: true,
-        internalType: "address",
-        name: "contractAddress",
-        type: "address",
+        "internalType": "address[]",
+        "name": "_owners",
+        "type": "address[]"
       },
       {
-        indexed: false,
-        internalType: "address",
-        name: "creator",
-        type: "address",
+        "internalType": "uint256",
+        "name": "_numConfirmationRequired",
+        "type": "uint256"
       },
       {
-        indexed: false,
-        internalType: "address[]",
-        name: "owners",
-        type: "address[]",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "signaturesRequired",
-        type: "uint256",
-      },
+        "internalType": "address",
+        "name": "_erc20Address",
+        "type": "address"
+      }
     ],
-    name: "Create",
-    type: "event",
+    "name": "create",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "walletAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
-    anonymous: false,
-    inputs: [
+    "inputs": [
       {
-        indexed: true,
-        internalType: "address",
-        name: "contractAddress",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "address[]",
-        name: "owners",
-        type: "address[]",
-      },
-      {
-        indexed: true,
-        internalType: "uint256",
-        name: "signaturesRequired",
-        type: "uint256",
-      },
+        "internalType": "address",
+        "name": "creator",
+        "type": "address"
+      }
     ],
-    name: "Owners",
-    type: "event",
+    "name": "getInstantiationCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "uint256",
-        name: "_chainId",
-        type: "uint256",
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       },
       {
-        internalType: "address[]",
-        name: "_owners",
-        type: "address[]",
-      },
-      {
-        internalType: "uint256",
-        name: "_signaturesRequired",
-        type: "uint256",
-      },
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    name: "create",
-    outputs: [],
-    stateMutability: "payable",
-    type: "function",
+    "name": "instantiations",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    inputs: [
+    "inputs": [
       {
-        internalType: "address",
-        name: "_contractAddress",
-        type: "address",
-      },
-      {
-        internalType: "address[]",
-        name: "_owners",
-        type: "address[]",
-      },
-      {
-        internalType: "uint256",
-        name: "_signaturesRequired",
-        type: "uint256",
-      },
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
     ],
-    name: "emitOwners",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
+    "name": "isInstantiation",
+    "outputs": [
       {
-        internalType: "uint256",
-        name: "_index",
-        type: "uint256",
-      },
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
     ],
-    name: "getMultiSig",
-    outputs: [
-      {
-        internalType: "address",
-        name: "multiSigAddress",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "signaturesRequired",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "balance",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    name: "multiSigs",
-    outputs: [
-      {
-        internalType: "contract MultiSigWallet",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "numberOfMultiSigs",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
+    "stateMutability": "view",
+    "type": "function"
+  }
 ];
 
 // Mainnet DAI, Optimism and Arbitrium Rollup Contracts with local addresses
@@ -1047,7 +988,7 @@ module.exports = {
   80002: {
     contracts: {
       MultiSigFactory: {
-        address: "0x3117B2B43bF720Cce480dC078c0c8F85d0A09E45",
+        address: "0xDA2b8e4A10b9e399c2aD96bBA314e86318451B74",
         abi: MULTISIGABI,
       },
     },

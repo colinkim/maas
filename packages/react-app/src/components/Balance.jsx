@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useBalance } from "eth-hooks";
 import { BigNumber, Contract } from 'ethers';
 
 const { utils } = require("ethers");
 const zero = BigNumber.from(0);
-
+let balanceCount = 0;
 // ABI for ERC20 token balance function
 const ERC20_ABI = [
   {
@@ -30,68 +30,88 @@ export default function Balance(props) {
 
   const { provider, address } = props;
 
-  const balanceContract = useBalance(props.provider, props.address);
-  useEffect(() => {
-    setBalance(balanceContract);
-  }, [balanceContract]);
 
   useEffect(() => {
     async function getBalance() {
+
       if (provider && address) {
-
-        const network = await provider.getNetwork();
-        const chainId = network.chainId;
-
-
-        // Fetch the list of known networks
-        const response = await fetch('https://chainid.network/chains.json');
-        const networks = await response.json();
-
-        // Find the network details based on the chain ID
-        const networkDetails = networks.find(net => net.chainId === chainId);
-
-        // Define a variable for the native currency symbol
-        let nativeCurrencySymbol = "Unknown";
-
-        // If the network is found, get the native currency symbol
-        if (networkDetails && networkDetails.nativeCurrency) {
-          nativeCurrencySymbol = networkDetails.nativeCurrency.symbol;
-        }
-
-        const storedSelectedToken = localStorage.getItem('selectedToken');
-        console.log('Stored selected token:', storedSelectedToken);
-
-        if (!storedSelectedToken) {
-          const newBalance = await provider.getBalance(address);
-          setBalance(newBalance);
-          setSymbol(nativeCurrencySymbol);
-        } else {
-          let parsedToken;
+        const getNativeCurrencySymbol = async (provider) => {
           try {
-            parsedToken = JSON.parse(storedSelectedToken);
-          } catch (e) {
-            console.error('Error parsing stored token:', e);
-            // Handle error, e.g., reset balance and symbol to default
-            const newBalance = await provider.getBalance(address);
-            setBalance(newBalance);
-            setSymbol(nativeCurrencySymbol);
-            return;
+            const network = await provider.getNetwork();
+
+            // Most providers expose the native currency symbol directly
+            if (network.nativeCurrency && network.nativeCurrency.symbol) {
+              return network.nativeCurrency.symbol;
+            }
+
+            // Fallback: use common symbols for well-known networks
+            switch (network.chainId) {
+              case 1: return 'ETH';  // Ethereum Mainnet
+              case 137: return 'MATIC';  // Polygon
+              case 56: return 'BNB';  // Binance Smart Chain
+              case 43114: return 'AVAX';  // Avalanche
+              case 42161: return 'ETH';  // Arbitrum
+              case 10: return 'ETH';  // Optimism
+              case 80002: return 'tMATIC';  // Optimism
+              case 97: return 'tBNB';  // Optimism
+              // Add more cases as needed
+              default: return 'Unknown';
+            }
+          } catch (error) {
+            console.error('Error getting native currency symbol:', error);
+            return 'Unknown';
+          }
+        };
+
+
+        const nativeCurrencySymbol = await getNativeCurrencySymbol(provider);
+        console.log('Native currency symbol:', nativeCurrencySymbol);
+
+        const fetchBalance = async (address, tokenAddress = null) => {
+          try {
+            if (!tokenAddress) {
+              const balance = await provider.getBalance(address);
+              return { balance, symbol: nativeCurrencySymbol };
+            } else {
+              const tokenContract = new Contract(tokenAddress, ERC20_ABI, provider);
+              const balance = await tokenContract.balanceOf(address);
+              const symbol = await tokenContract.symbol();
+              return { balance, symbol };
+            }
+          } catch (error) {
+            console.error('Error fetching balance:', error);
+            return null;
+          }
+        };
+
+        const updateBalance = async () => {
+          const storedSelectedToken = localStorage.getItem('selectedToken');
+          console.log('Stored selected token:', storedSelectedToken);
+
+          let tokenAddress = null;
+
+          if (storedSelectedToken) {
+            try {
+              const parsedToken = JSON.parse(storedSelectedToken);
+              tokenAddress = parsedToken?.address;
+            } catch (error) {
+              console.error('Error parsing stored token:', error);
+            }
           }
 
-          if (!parsedToken || !parsedToken.address) {
-            console.error('Parsed token is null or does not have an address property.');
-            const newBalance = await provider.getBalance(address);
-            setBalance(newBalance);
-            setSymbol(nativeCurrencySymbol);
+          const result = await fetchBalance(address, tokenAddress);
+
+          if (result) {
+            setBalance(result.balance);
+            setSymbol(result.symbol);
           } else {
-            console.log(parsedToken.address);
-            const tokenContract = new Contract(parsedToken.address, ERC20_ABI, provider);
-            const tokenBalance = await tokenContract.balanceOf(address);
-            const tokenSymbol = await tokenContract.symbol();
-            setBalance(tokenBalance);
-            setSymbol(tokenSymbol);
+            // Fallback to native currency if there's an error
+            const defaultResult = await fetchBalance(address);
+            setBalance(defaultResult.balance);
+            setSymbol(defaultResult.symbol);
           }
-        }
+        };
+        updateBalance();
 
       }
     }
@@ -126,7 +146,6 @@ export default function Balance(props) {
         padding: "0 0.5rem",
         cursor: "pointer",
       }}
-
     >
       {displayBalance} <b>{symbol}</b>
     </span>

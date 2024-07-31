@@ -6,6 +6,7 @@ import { Input } from "antd";
 
 import { AddressInput, EtherInput } from "..";
 import CreateModalSentOverlay from "./CreateModalSentOverlay";
+let BACKEND_URL = "http://192.168.1.235:49899/";
 
 export default function CreateMultiSigModal({
   price,
@@ -117,7 +118,7 @@ export default function CreateMultiSigModal({
     setSignaturesRequired(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     try {
       setPendingCreate(true);
 
@@ -136,47 +137,49 @@ export default function CreateMultiSigModal({
         throw new Error("Contract method 'create' is already created");
       }
 
-      console.log("\n\n\n\n")
-      console.log("writeContracts", writeContracts)
-      console.log("writeContracts[contractName]", writeContracts[contractName])
-      console.log("writeContracts[contractName].create", writeContracts[contractName].create)
-      console.log("selectedChainId", selectedChainId)
-      console.log("owners", owners)
-      console.log("signaturesRequired", signaturesRequired)
-      tx(
-        writeContracts[contractName].create(selectedChainId, owners, signaturesRequired, {
-          value: ethers.utils.parseEther("" + parseFloat(amount).toFixed(12)),
-        }),
-        update => {
-          if (update && (update.error || update.reason)) {
-            console.log("tx update error!");
-            setPendingCreate(false);
-            setTxError(true);
-          }
 
-          if (update && update.code) {
-            setPendingCreate(false);
-            setTxSent(false);
-          }
 
-          if (update && (update.status === "confirmed" || update.status === 1)) {
-            console.log("tx update confirmed!");
-            setPendingCreate(false);
-            setTxSuccess(true);
-            setTimeout(() => {
-              setIsCreateModalVisible(false);
-              resetState();
-            }, 2500);
-          }
+      //CREATE MULTISIGWALLET using MULTISIGWALLETFACTORY
+      //Variables:
+      //kind[uint8]: Type of Wallet -> 0 (Default Multi Sig Wallet)
+      //owners[address[]] -> Lost of Owners
+      //nomConfirmationRequired[uint256] -> Number of Confirmations Required
+      //erc20Address[address] -> Not requried for Default Multi Sig Wallet use Empty 0x0000000000000000000000000000000000000000
+
+      console.log("\n\n\n\n\n\n");
+      console.log("writeContracts[contractName]")
+      console.log(writeContracts[contractName])
+      const result = await tx(
+        writeContracts[contractName].create(0, owners, signaturesRequired, "0x0000000000000000000000000000000000000000")
+      );
+
+      const response = await fetch(`${BACKEND_URL}addMultiSigWallet`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      ).catch(err => {
-        setPendingCreate(false);
-        throw err;
+        body: JSON.stringify({
+          address: result.contractAddress, // Assuming the contract address is returned
+          chainId: selectedChainId,
+          name: walletName,
+          ownerAddress: address,
+        }),
       });
+      const backendResult = await response.json();
+      if (backendResult.success) {
 
-      setTxSent(true);
+        // Update state and close modal
+        setPendingCreate(false);
+        setTxSuccess(true);
+        setTimeout(() => {
+          setIsCreateModalVisible(false);
+          resetState();
+          window.location.reaload();
+        }, 2500);
+      }
     } catch (e) {
-      console.log("CREATE MUTLI-SIG SUBMIT FAILED: ", e);
+      console.error("CREATE MULTI-SIG SUBMIT FAILED: ", e);
+      setPendingCreate(false);
     }
   };
 
@@ -215,11 +218,11 @@ export default function CreateMultiSigModal({
           /> */}
 
           <div style={{ width: "90%" }}>
-            <InputNumber
+            <Input
               style={{ width: "100%" }}
               placeholder="Wallet Name"
               value={walletName}
-              onChange={setWalletName}
+              onChange={(e) => setWalletName(e.target.value)}
             />
           </div>
 

@@ -12,6 +12,7 @@ import EtherInput from "./EtherInput";
 
 const { Text, Paragraph } = Typography;
 const { Option } = Select;
+let BACKEND_URL = process.env.REACT_APP_BACKEND_SERVER;
 
 // ABI for ERC20 token name and symbol functions
 const ERC20_ABI = [
@@ -52,7 +53,8 @@ export default function Wallet(props) {
       if (props.provider && signerAddress) {
         const network = await props.provider.getNetwork();
         const chainId = network.chainId;
-        const response = await fetch(`http://localhost:49899/getUserTokens/${signerAddress}/${chainId}`);
+
+        const response = await fetch(`${BACKEND_URL}getUserTokens/${signerAddress}/${chainId}`);
         const userTokens = await response.json();
         setTokens(userTokens);
 
@@ -73,13 +75,16 @@ export default function Wallet(props) {
   const [open, setOpen] = useState(false);
 
   const handleAddOrRemoveToken = async () => {
+
+    console.log("TEST");
+    console.log(BACKEND_URL);
     const existingToken = tokens.find(token => token.address === newTokenAddress);
     if (existingToken) {
       // Remove token
       try {
         const network = await props.provider.getNetwork();
         const chainId = network.chainId;
-        const response = await fetch('http://localhost:49899/removeToken', {
+        const response = await fetch(BACKEND_URL + "removeToken", {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -91,7 +96,10 @@ export default function Wallet(props) {
           }),
         });
         const result = await response.json();
+        console.log("result");
+        console.log(result);
         if (result.success) {
+
           // Update localStorage
           localStorage.setItem('selectedToken', "");
           window.location.reload();
@@ -109,7 +117,9 @@ export default function Wallet(props) {
 
         const network = await props.provider.getNetwork();
         const chainId = network.chainId;
-        const response = await fetch('http://localhost:49899/addToken', {
+        console.log("TEST");
+        console.log(BACKEND_URL)
+        const response = await fetch(BACKEND_URL + "addToken", {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -122,12 +132,15 @@ export default function Wallet(props) {
           }),
         });
         const result = await response.json();
+        console.log("result");
+        console.log(result);
         if (result.success) {
           setTokens(result.tokens);
           setNewTokenAddress('');
 
           // Update localStorage
           localStorage.setItem('userTokens', JSON.stringify(result.tokens));
+          // window.location.reload();
         }
       } catch (error) {
         console.error("Error adding token:", error);

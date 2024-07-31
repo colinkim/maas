@@ -15,7 +15,6 @@ export default function Transactions({
   contractName,
   signaturesRequired,
   address,
-  nonce,
   userSigner,
   mainnetProvider,
   localProvider,
@@ -38,20 +37,17 @@ export default function Transactions({
       const newTransactions = [];
       for (const i in res.data) {
         console.log("backend stuff res.data[i]", res.data[i]);
-        const thisNonce = ethers.BigNumber.from(res.data[i].nonce);
-        if (thisNonce && nonce && thisNonce.gte(nonce)) {
-          const validSignatures = [];
-          for (const sig in res.data[i].signatures) {
-            const signer = await readContracts[contractName].recover(res.data[i].hash, res.data[i].signatures[sig]);
-            const isOwner = await readContracts[contractName].isOwner(signer);
-            if (signer && isOwner) {
-              validSignatures.push({ signer, signature: res.data[i].signatures[sig] });
-            }
+        const validSignatures = [];
+        for (const sig in res.data[i].signatures) {
+          const signer = await readContracts[contractName].recover(res.data[i].hash, res.data[i].signatures[sig]);
+          const isOwner = await readContracts[contractName].isOwner(signer);
+          if (signer && isOwner) {
+            validSignatures.push({ signer, signature: res.data[i].signatures[sig] });
           }
-
-          const update = { ...res.data[i], validSignatures };
-          newTransactions.push(update);
         }
+
+        const update = { ...res.data[i], validSignatures };
+        newTransactions.push(update);
       }
 
       console.log("backend stuff newTransactions", newTransactions);
@@ -93,7 +89,7 @@ export default function Transactions({
   return (
     <div style={{ maxWidth: 850, margin: "auto", marginTop: 32, marginBottom: 32 }}>
       <h1>
-        <b style={{ padding: 16 }}>Pending Transactions #{nonce ? nonce.toNumber() : <Spin />}</b>
+        <b style={{ padding: 16 }}>Pending Transactions</b>
       </h1>
 
       <List
@@ -123,7 +119,6 @@ export default function Transactions({
                     type="secondary"
                     onClick={async () => {
                       const newHash = await readContracts[contractName].getTransactionHash(
-                        item.nonce,
                         item.to,
                         parseEther("" + parseFloat(item.amount).toFixed(12)),
                         item.data,
@@ -152,7 +147,6 @@ export default function Transactions({
                     type={hasEnoughSignatures ? "primary" : "secondary"}
                     onClick={async () => {
                       const newHash = await readContracts[contractName].getTransactionHash(
-                        item.nonce,
                         item.to,
                         parseEther("" + parseFloat(item.amount).toFixed(12)),
                         item.data,

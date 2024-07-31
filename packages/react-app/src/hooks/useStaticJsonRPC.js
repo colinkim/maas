@@ -5,15 +5,12 @@ const createProvider = async url => {
   const p = new ethers.providers.StaticJsonRpcProvider(url);
 
   await p.ready;
-  console.log("ENDED")
-  console.log(p.getBlockNumber());
   return p;
 };
 
 export default function useStaticJsonRPC(urlArray) {
 
   const [provider, setProvider] = useState(null);
-  console.log("STARTED")
   const handleProviders = useCallback(async () => {
     try {
       const p = await Promise.race(urlArray.map(createProvider));
@@ -28,10 +25,7 @@ export default function useStaticJsonRPC(urlArray) {
   }, [urlArray]);
 
   useEffect(() => {
-    console.log("MIDDLE")
-
     handleProviders();
-
     // eslint-disable-next-line
   }, [JSON.stringify(urlArray)]);
 
