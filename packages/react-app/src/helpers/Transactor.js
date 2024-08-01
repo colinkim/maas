@@ -89,7 +89,7 @@ export default function Transactor(providerOrSigner, gasPrice, etherscan) {
           });
         } else {
           notification.info({
-            message: "Local Transaction Sent",
+            message: "Transaction Sent",
             description: result.hash,
             placement: "bottomRight",
           });
@@ -120,10 +120,10 @@ export default function Transactor(providerOrSigner, gasPrice, etherscan) {
           e.data && e.data.message
             ? e.data.message
             : e.error && JSON.parse(JSON.stringify(e.error)).body
-            ? JSON.parse(JSON.parse(JSON.stringify(e.error)).body).error.message
-            : e.data
-            ? e.data
-            : JSON.stringify(e);
+              ? JSON.parse(JSON.parse(JSON.stringify(e.error)).body).error.message
+              : e.data
+                ? e.data
+                : JSON.stringify(e);
         if (!e.error && e.message) {
           message = e.message;
         }

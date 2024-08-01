@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Button, List, Divider, Input, Card, DatePicker, Slider, Switch, Progress, Spin } from "antd";
+import { Button, List, Divider, Input, Card, DatePicker, Slider, Switch, Progress, Spin, notification } from "antd";
 import { ConsoleSqlOutlined, SyncOutlined } from "@ant-design/icons";
 import { parseEther, formatEther } from "@ethersproject/units";
 import { ethers } from "ethers";
 import { Address, AddressInput, Balance, Blockie, TransactionListItem } from "../components";
 import { usePoller } from "eth-hooks";
+import { useHistory } from "react-router-dom";
 
 const axios = require("axios");
 
@@ -18,44 +19,229 @@ export default function Transactions({
   userSigner,
   mainnetProvider,
   localProvider,
-  yourLocalBalance,
-  price,
+  gasPriceDouble,
   tx,
   readContracts,
   writeContracts,
   blockExplorer,
 }) {
+  const history = useHistory();
   const [transactions, setTransactions] = useState();
-  usePoller(() => {
-    const getTransactions = async () => {
+  const [loading, setLoading] = useState(false);
+
+
+
+  const handleConfirmTransaction = async (item) => {
+    if (item.hasAlreadyConfirmed) return;
+
+    try {
+
+      setLoading(true);
+
+      const contract = writeContracts[contractName];
+      const transaction = await contract.populateTransaction.confirmTransaction(item.txID);
+
+      // Add 20% buffer to estimated gas limit
+
+      const price = await localProvider.getGasPrice();
+      const priceInWei = ethers.utils.parseUnits(price.toString(), 'gwei');
+
+
+
+
+
+
+      const confirmTX = await userSigner.sendTransaction({
+        to: contract.address,
+        data: transaction.data,
+        gasPrice: 50000000000
+      });
+
+
+      notification.info({
+        message: "Transaction Sent",
+        description: "Please wait while the transaction is being processed.",
+        placement: "bottomRight",
+      });
+
+
+
+      console.log("Transaction sent:", confirmTX.hash);
+      const receipt = await confirmTX.wait();
+
+
+
+      console.log("Transaction mined. Receipt:", receipt);
+
+      if (receipt.status === 1) {
+        console.log("Transaction was successful!");
+        notification.success({
+          message: "Transaction Successful",
+          description: "The transaction was mined and executed successfully.",
+          placement: "bottomRight",
+        });
+
+        console.log("chainId", localProvider._network.chainId)
+        console.log("contract.address", contract.address)
+        console.log("confirmTX.hash", confirmTX.hash)
+        console.log("status", "COMPLETED")
+
+        const res = await axios.post(poolServerUrl + "updateStatus", {
+          chainId: localProvider._network.chainId,
+          address: contract.address,
+          txHash: item.txHash,
+          status: "COMPLETED"
+        });
+
+        setLoading(false);
+
+        console.log("BE POST RESULT", res.data);
+        setTimeout(() => {
+          history.push("/history");
+        }, 1000);
+      } else {
+        console.log("Transaction failed!");
+        notification.error({
+          message: "Transaction Failed",
+          description: "The transaction was mined but failed to execute.",
+          placement: "bottomRight",
+        });
+      }
+    } catch (error) {
+      console.error("Error processing transaction:", error);
+      notification.error({
+        message: "Transaction Error",
+        description: "An error occurred while processing the transaction.",
+        placement: "bottomRight",
+      });
+    } finally {
+      setLoading(false);
+
+    }
+
+    console.log(item.txID)
+  };
+
+
+
+
+  // const handleConfirmTransaction = useCallback(async (item) => {
+  //   if (item.hasAlreadyConfirmed) return;
+
+  //   try {
+  //     setLoading(true);
+
+
+  //     const contract = writeContracts[contractName];
+  //     const transaction = await contract.populateTransaction.confirmTransaction(item.txID);
+
+  //     // Add 20% buffer to estimated gas limit
+
+  //     const price = await localProvider.getGasPrice();
+  //     const priceInWei = ethers.utils.parseUnits(price.toString(), 'gwei');
+
+  //     const confirmTX = await userSigner.sendTransaction({
+  //       to: contract.address,
+  //       data: transaction.data,
+  //       gasPrice: 50000000000
+  //     });
+
+
+  //     const receipt = await confirmTX.wait();
+
+
+  //     notification.info({
+  //       message: "Transaction Sent",
+  //       description: "Please wait while the transaction is being processed.",
+  //       placement: "bottomRight",
+  //     });
+
+
+  //     console.log("Transaction mined. Receipt:", receipt);
+
+  //     if (receipt.status === 1) {
+  //       console.log("Transaction was successful!");
+  //       notification.success({
+  //         message: "Transaction Successful",
+  //         description: "The transaction was mined and executed successfully.",
+  //         placement: "bottomRight",
+  //       });
+
+  //       const res = await axios.post(poolServerUrl + "updateStatus", {
+  //         chainId: localProvider._network.chainId,
+  //         address: readContracts[contractName]?.address,
+  //         txHash: confirmTX.hash,
+  //         status: "COMPLETED"
+  //       });
+
+  //       console.log("BE POST RESULT", res.data);
+  //       setTimeout(() => {
+  //         history.push("/history");
+  //       }, 1000);
+  //     } else {
+  //       console.log("Transaction failed!");
+  //       notification.error({
+  //         message: "Transaction Failed",
+  //         description: "The transaction was mined but failed to execute.",
+  //         placement: "bottomRight",
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error("Error processing transaction:", error);
+  //     notification.error({
+  //       message: "Transaction Error",
+  //       description: "An error occurred while processing the transaction.",
+  //       placement: "bottomRight",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, [writeContracts, contractName, poolServerUrl, localProvider]);
+
+  const getTransactions = useCallback(async () => {
+    if (!readContracts[contractName]) return;
+
+    try {
       const res = await axios.get(
-        poolServerUrl + readContracts[contractName].address + "_" + localProvider._network.chainId,
+        `${poolServerUrl}${readContracts[contractName].address}_${localProvider._network.chainId}`
       );
 
       console.log("backend stuff res", res.data);
 
-      const newTransactions = [];
-      for (const i in res.data) {
-        console.log("backend stuff res.data[i]", res.data[i]);
-        const validSignatures = [];
-        for (const sig in res.data[i].signatures) {
-          const signer = await readContracts[contractName].recover(res.data[i].hash, res.data[i].signatures[sig]);
-          const isOwner = await readContracts[contractName].isOwner(signer);
-          if (signer && isOwner) {
-            validSignatures.push({ signer, signature: res.data[i].signatures[sig] });
-          }
-        }
+      const newTransactions = await Promise.all(
+        Object.values(res.data)
+          .filter(txData => txData.status === "PENDING")
+          .map(async txData => {
+            const txID = ethers.BigNumber.from(txData.txID).toNumber();
+            const getConfirmations = await readContracts[contractName].getConfirmations(txID);
+            const numberOfConfirmations = getConfirmations.length;
+            const normalizedAddressToCheck = address.toLowerCase();
+            const hasAlreadyConfirmed = getConfirmations.some(addr => addr.toLowerCase() === normalizedAddressToCheck);
+            const isOwner = await readContracts[contractName].isOwner(address);
 
-        const update = { ...res.data[i], validSignatures };
-        newTransactions.push(update);
-      }
+            return {
+              ...txData,
+              isOwner,
+              txID,
+              numberOfConfirmations,
+              hasAlreadyConfirmed,
+            };
+          })
+      );
 
       console.log("backend stuff newTransactions", newTransactions);
-
       setTransactions(newTransactions);
-    };
-    if (readContracts[contractName]) getTransactions();
-  }, 3777);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+    }
+  }, [poolServerUrl, readContracts, contractName, localProvider, address]);
+
+  useEffect(() => {
+    getTransactions();
+  }, [address]);
+
+  usePoller(getTransactions, 10000);
+
 
   const getSortedSigList = async (allSigs, newHash) => {
     const sigList = [];
@@ -82,9 +268,11 @@ export default function Transactions({
     return [finalSigList, finalSigners];
   };
 
-  if (!signaturesRequired) {
-    return <Spin />;
+  if (!signaturesRequired || !transactions) {
+    return <Spin style={{ marginTop: '30px', }} />;
   }
+
+
 
   return (
     <div style={{ maxWidth: 850, margin: "auto", marginTop: 32, marginBottom: 32 }}>
@@ -96,78 +284,33 @@ export default function Transactions({
         bordered
         dataSource={transactions}
         renderItem={item => {
-          const hasSigned = item.signers.indexOf(address) >= 0;
-          const hasEnoughSignatures = item.signatures.length <= signaturesRequired.toNumber();
+          const hasSigned = item.hasAlreadyConfirmed;
+          const hasEnoughSignatures = item.numberOfConfirmations <= signaturesRequired.toNumber();
 
-          console.log("transaction details:", item);
+          // console.log("transaction details:", item);
 
           return (
             <TransactionListItem
               item={item}
               mainnetProvider={mainnetProvider}
               blockExplorer={blockExplorer}
-              price={price}
               readContracts={readContracts}
               contractName={contractName}
             >
               <div style={{ padding: 16 }}>
                 <span style={{ padding: 4 }}>
-                  {item.signatures.length}/{signaturesRequired.toNumber()} {hasSigned ? "✅" : ""}
+                  {item.numberOfConfirmations}/{signaturesRequired.toNumber()} {hasSigned ? "✅" : ""}
                 </span>
                 <span style={{ padding: 4 }}>
                   <Button
-                    type="secondary"
-                    onClick={async () => {
-                      const newHash = await readContracts[contractName].getTransactionHash(
-                        item.to,
-                        parseEther("" + parseFloat(item.amount).toFixed(12)),
-                        item.data,
-                      );
-
-                      const signature = await userSigner?.signMessage(ethers.utils.arrayify(newHash));
-                      const recover = await readContracts[contractName].recover(newHash, signature);
-                      const isOwner = await readContracts[contractName].isOwner(recover);
-                      if (isOwner) {
-                        const [finalSigList, finalSigners] = await getSortedSigList(
-                          [...item.signatures, signature],
-                          newHash,
-                        );
-                        const res = await axios.post(poolServerUrl, {
-                          ...item,
-                          signatures: finalSigList,
-                          signers: finalSigners,
-                        });
-                      }
-                    }}
+                    type={hasSigned ? "secondary" : "primary"}
+                    loading={loading}
+                    onClick={() => handleConfirmTransaction(item)}
+                    disabled={hasSigned}
                   >
-                    Sign
+                    {hasSigned ? "Confirmed" : "Confirm"}
                   </Button>
-                  <Button
-                    key={item.hash}
-                    type={hasEnoughSignatures ? "primary" : "secondary"}
-                    onClick={async () => {
-                      const newHash = await readContracts[contractName].getTransactionHash(
-                        item.to,
-                        parseEther("" + parseFloat(item.amount).toFixed(12)),
-                        item.data,
-                      );
 
-                      const [finalSigList, finalSigners] = await getSortedSigList(item.signatures, newHash);
-
-                      console.log("writeContracts: ", item.to, parseEther("" + parseFloat(item.amount).toFixed(12)), item.data, finalSigList);
-
-                      tx(
-                        writeContracts[contractName].executeTransaction(
-                          item.to,
-                          parseEther("" + parseFloat(item.amount).toFixed(12)),
-                          item.data,
-                          finalSigList,
-                        ),
-                      );
-                    }}
-                  >
-                    Exec
-                  </Button>
                 </span>
               </div>
             </TransactionListItem>

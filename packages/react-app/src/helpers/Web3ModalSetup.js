@@ -6,13 +6,13 @@ import WalletConnectProvider from "@walletconnect/web3-provider";
 import Authereum from "authereum";
 import { INFURA_ID, ALCHEMY_KEY } from "../constants";
 
-// Coinbase walletLink init
-const walletLink = new WalletLink({
-  appName: "coinbase",
-});
+// // Coinbase walletLink init
+// const walletLink = new WalletLink({
+//   appName: "coinbase",
+// });
 
-// WalletLink provider
-const walletLinkProvider = walletLink.makeWeb3Provider(`https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`, 1);
+// // WalletLink provider
+// const walletLinkProvider = walletLink.makeWeb3Provider(`https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`, 1);
 
 // Portis ID: 6255fb2b-58c8-433b-a2c9-62098c05ddc9
 /**

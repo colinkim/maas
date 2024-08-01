@@ -1,40 +1,97 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { List } from "antd";
-import { TransactionListItem }from "../components";
+import { TransactionListItem } from "../components";
+import { usePoller } from "eth-hooks";
+import { ethers } from "ethers";
 
-export default function TxHistory({
+const axios = require("axios");
+
+export default function Transactions({
+  poolServerUrl,
   contractName,
+  signaturesRequired,
+  address,
+  userSigner,
   mainnetProvider,
-  price,
+  localProvider,
+  gasPriceDouble,
+  tx,
   readContracts,
-  executeTransactionEvents,
+  writeContracts,
   blockExplorer,
 }) {
+  const [transactions, setTransactions] = useState();
+
+  usePoller(() => {
+    const getTransactions = async () => {
+      try {
+        const res = await axios.get(
+          poolServerUrl + readContracts[contractName].address + "_" + localProvider._network.chainId
+        );
+
+        console.log("backend stuff res", res.data);
+
+        const newTransactions = [];
+        for (const key in res.data) {
+
+          console.log("backend stuff res.data[key]", res.data[key]);
+          const txData = res.data[key];
+          if (txData.status == "COMPLETED") {
+            const txID = ethers.BigNumber.from(txData.txID).toNumber();
+            const updatedTxData = {
+              ...txData,
+              txID,
+            };
+
+            newTransactions.push(updatedTxData);
+
+
+          }
+
+
+        }
+
+        console.log("backend stuff newTransactions", newTransactions);
+
+        setTransactions(newTransactions);
+      } catch (error) {
+        console.error("Error fetching transactions:", error);
+      }
+    };
+    if (readContracts[contractName]) getTransactions();
+  }, 10000);
 
   return (
-    <div>
-      <div style={{ padding: 32, maxWidth: 850, margin: "auto" }}>
+    <div style={{ maxWidth: 850, margin: "auto", marginTop: 32, marginBottom: 32 }}>
       <h1>
         <b style={{ padding: 16 }}>Transaction History</b>
       </h1>
 
       <List
-          bordered
-          dataSource={executeTransactionEvents}
-          renderItem={item => {
-            return (
-              <TransactionListItem
-                item={Object.create(item)}
-                mainnetProvider={mainnetProvider}
-                blockExplorer={blockExplorer}
-                price={price}
-                readContracts={readContracts}
-                contractName={contractName}
-              />
-            );
-          }}
-        />
-        </div>
+        bordered
+        dataSource={transactions}
+        renderItem={item => {
+          return (
+            <TransactionListItem
+              item={item}
+              mainnetProvider={mainnetProvider}
+              blockExplorer={blockExplorer}
+              readContracts={readContracts}
+              contractName={contractName}
+            >
+
+            </TransactionListItem>
+
+
+          );
+        }}
+      />
+
+
+
+
+
+
     </div>
   );
 }

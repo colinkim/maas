@@ -43,10 +43,10 @@ export default function Owners({
         }}
       />
 
-      <Collapse collapsible={prevOwners.size === 0 ? "disabled" : ""} style={{ maxWidth: 400, margin: "auto", marginTop: 10, padding: "0px" }}>
+      {/* <Collapse collapsible={owners.size === 0 ? "disabled" : ""} style={{ maxWidth: 400, margin: "auto", marginTop: 10, padding: "0px" }}>
         <Panel header={<span style={{ marginLeft: "0px", padding: "0px" }}><b>Previous Owners</b></span>} key="1">
           <List
-            dataSource={[...prevOwners]}
+            dataSource={[...owners]}
             style={{ maxWidth: 400, margin: "auto", }}
             bordered
             renderItem={(prevOwnerAddress) => {
@@ -62,7 +62,7 @@ export default function Owners({
             }}
           />
         </Panel>
-      </Collapse>
+      </Collapse> */}
     </div>
   );
 }

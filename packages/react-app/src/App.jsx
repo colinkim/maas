@@ -48,7 +48,7 @@ const NETWORKCHECK = true;
 const USE_BURNER_WALLET = false; // toggle burner wallet feature
 const USE_NETWORK_SELECTOR = false;
 let BACKEND_URL = process.env.REACT_APP_BACKEND_SERVER;
-
+let counter = 0;
 const web3Modal = Web3ModalSetup();
 
 function App(props) {
@@ -89,9 +89,39 @@ function App(props) {
     }, 1);
   };
 
+  const useGasPrice = (localProvider) => {
+    const [gasPrice, setGasPrice] = useState();
+
+    useEffect(() => {
+      const fetchGasPrice = async () => {
+        if (localProvider) {
+          try {
+            const price = await localProvider.getGasPrice();
+            const doubledPrice = price.mul(2); // Double the price
+            console.log("Doubled Gas Price")
+
+            console.log(doubledPrice.toNumber())
+            setGasPrice(ethers.utils.formatUnits(doubledPrice, 'gwei'));
+          } catch (error) {
+            console.error('Error fetching gas price:', error);
+          }
+        }
+      };
+
+      fetchGasPrice();
+
+      // Optional: Set up an interval to periodically update the gas price
+      const interval = setInterval(fetchGasPrice, 15000); // Update every 15 seconds
+
+      return () => clearInterval(interval);
+    }, [localProvider]);
+
+    return gasPrice;
+  };
+
 
   /* 🔥 This hook will get the price of Gas from ⛽️ EtherGasStation */
-  const gasPrice = useGasPrice(targetNetwork, "fast");
+  const gasPrice = useGasPrice(localProvider);
   // Use your injected provider from 🦊 Metamask or if you don't have it then instantly generate a 🔥 burner wallet.
   const userProviderAndSigner = useUserProviderAndSigner(injectedProvider, localProvider);
   const userSigner = userProviderAndSigner.signer;
@@ -106,44 +136,25 @@ function App(props) {
     getAddress();
   }, [userSigner]);
 
-
-
-  // You can warn the user if you would like them to be on a specific network
   const localChainId = localProvider && localProvider._network && localProvider._network.chainId;
   const selectedChainId =
     userSigner && userSigner.provider && userSigner.provider._network && userSigner.provider._network.chainId;
 
-  // For more hooks, check out 🔗eth-hooks at: https://www.npmjs.com/package/eth-hooks
 
-  // The transactor wraps transactions and provides notificiations
   const tx = Transactor(userSigner, gasPrice);
 
-  // 🏗 scaffold-eth is full of handy hooks like this one to get your balance:
   const yourLocalBalance = useBalance(localProvider, address);
-
-  // Just plug in different 🛰 providers to get your balance on different chains:
-  // const yourMainnetBalance = useBalance(mainnetProvider, address);
-
-  // const contractConfig = useContractConfig();
 
   const contractConfig = { externalContracts: externalContracts || {} };
 
-  // Load in your local 📝 contract and read a value from it:
   const readContracts = useContractLoader(localProvider, contractConfig);
 
-  // If you want to make 🔐 write transactions to your contracts, use the userSigner:
   const writeContracts = useContractLoader(userSigner, contractConfig, localChainId);
 
-  // const [readContracts, setReadContracts] = useState(readContractsSetup);
 
   const contractName = "MultiSigWallet";
   const contractAddress = readContracts?.MultiSigWallet?.address;
 
-  //📟 Listen for broadcast events
-
-  // MultiSigFactory Events:
-  // const ownersMultiSigEvents = useEventListener(readContracts, "MultiSigFactory", "OwnerAddition", localProvider, 1);
-  // if (DEBUG) console.log("📟 ownersMultiSigEvents:", ownersMultiSigEvents);
 
   const [multiSigs, setMultiSigs] = useState([]);
   const [currentMultiSigAddress, setCurrentMultiSigAddress] = useState();
@@ -151,14 +162,6 @@ function App(props) {
   const [importedMultiSigs] = useLocalStorage("importedMultiSigs");
   const [multiSigNames, setMultiSigNames] = useState([]);
 
-  /*
-    if you want to hardcode a specific multisig for the frontend for everyone:
-  useEffect(()=>{
-    if(userSigner){
-      setCurrentMultiSigAddress("0x31787164D5A4ca8072035Eb89478e85f45C6d408")
-    }
-  },[userSigner])
-  */
   const getCurrentOwners = useContractReader(readContracts, contractName, "getOwners");
 
 
@@ -170,7 +173,9 @@ function App(props) {
 
 
   useEffect(async () => {
-    if (currentOwners) {
+
+
+    if (currentOwners && DEBUG) {
       console.log("currentOwners")
       console.log(currentOwners)
     }
@@ -222,52 +227,18 @@ function App(props) {
   }, [address]);
 
 
-
-  // useEffect(async () => {
-  //   if (address) {
-  //     let multiSigsForUser = ownersMultiSigEvents.reduce((filtered, createEvent) => {
-  //       if (createEvent.args.owners.includes(address) && !filtered.includes(createEvent.args.contractAddress)) {
-  //         filtered.push(createEvent.args.contractAddress);
-  //       }
-
-  //       return filtered;
-  //     }, []);
-
-  //     if (importedMultiSigs && importedMultiSigs[targetNetwork.name]) {
-  //       multiSigsForUser = [...new Set([...importedMultiSigs[targetNetwork.name], ...multiSigsForUser])];
-  //     }
-
-  //     if (multiSigsForUser.length > 0) {
-  //       const recentMultiSigAddress = multiSigsForUser[multiSigsForUser.length - 1];
-  //       if (recentMultiSigAddress !== currentMultiSigAddress) setContractNameForEvent(null);
-
-  //       const response = await fetch(`${BACKEND_URL}getMultiSigWallets/${address}/${targetNetwork.chainId}`);
-  //       const customNames = await response.json();
-
-  //       console.log("CUSTOM NAMES")
-  //       console.log(customNames)
-  //       console.log(multiSigsForUser)
-
-  //       // Combine existing multiSigs with custom names
-  //       const combinedMultiSigs = multiSigsForUser.map(address => ({
-  //         address,
-  //         name: customNames[address] || address,
-  //       }));
-
-
-
-  //       console.log(combinedMultiSigs)
-
-  //       setMultiSigs(combinedMultiSigs);
-  //     }
-  //   }
-  // }, [ownersMultiSigEvents, address]);
-
   const [signaturesRequired, setSignaturesRequired] = useState();
 
   const signaturesRequiredContract = useContractReader(readContracts, contractName, "required");
   useEffect(() => {
+
     setSignaturesRequired(signaturesRequiredContract);
+    if (DEBUG) {
+      console.log("signaturesRequiredContract")
+      console.log(signaturesRequiredContract)
+    }
+
+
   }, [signaturesRequiredContract]);
 
   const [contractNameForEvent, setContractNameForEvent] = useState();
@@ -288,36 +259,6 @@ function App(props) {
 
   }
 
-  // useEffect(() => {
-  //   async function fetchMultiSigWallets() {
-  //     if (address && multiSigs.length > 0) {
-  //       // Fetch custom names from backend
-  //       const response = await fetch(`${BACKEND_URL}getMultiSigWallets/${address}/${targetNetwork.chainId}`);
-  //       const customNames = await response.json();
-
-  //       // Combine existing multiSigs with custom names
-  //       const combinedMultiSigs = multiSigs.map(address => ({
-  //         address,
-  //         name: customNames[address] || address,
-  //       }));
-
-  //       setMultiSigs(combinedMultiSigs);
-  //       console.log('\n\n\n\n\n')
-  //       console.log("combinedMultiSigs")
-  //       console.log(combinedMultiSigs)
-  //       // Update localStorage
-  //       localStorage.setItem('multiSigWallets', JSON.stringify(customNames));
-
-  //       // If there's a current multi-sig address, update its name
-  //       if (currentMultiSigAddress) {
-  //         const currentWalletName = customNames[currentMultiSigAddress] || currentMultiSigAddress;
-  //         setCurrentMultiSigName(currentWalletName);
-  //       }
-  //     }
-  //   }
-
-  //   fetchMultiSigWallets();
-  // }, [address, multiSigs, targetNetwork.chainId, currentMultiSigAddress]);
 
   useEffect(() => {
 
@@ -331,56 +272,17 @@ function App(props) {
     }
   }, [currentMultiSigAddress, readContracts, writeContracts]);
 
-  // MultiSigWallet Events:
-  const allExecuteTransactionEvents = useEventListener(
-    currentMultiSigAddress && readContracts.MultiSigWallet ? readContracts : null,
-    contractNameForEvent,
-    "Execution",
-    localProvider,
-    1,
-  );
-  if (DEBUG) console.log("📟 executeTransactionEvents:", allExecuteTransactionEvents);
-
-  // const allOwnerEvents = useEventListener(
-  //   currentMultiSigAddress && readContracts.MultiSigWallet ? readContracts : null,
-  //   contractNameForEvent,
-  //   "OwnerAddition",
-  //   localProvider,
-  //   1,
-  // );
-  // if (DEBUG) console.log("📟 ownerEvents:", allOwnerEvents);
 
   const [ownerEvents, setOwnerEvents] = useState();
   const [executeTransactionEvents, setExecuteTransactionEvents] = useState();
 
-  // useEffect(() => {
-  //   setOwnerEvents(allOwnerEvents.filter(contractEvent => contractEvent.address === currentMultiSigAddress));
-  // }, [allOwnerEvents, currentMultiSigAddress]);
 
   useEffect(() => {
-    const filteredEvents = allExecuteTransactionEvents.filter(contractEvent => contractEvent.address === currentMultiSigAddress);
-    setExecuteTransactionEvents(filteredEvents.reverse());
+    setExecuteTransactionEvents([]);
 
-  }, [allExecuteTransactionEvents, currentMultiSigAddress]);
+  }, [currentMultiSigAddress]);
 
-  // EXTERNAL CONTRACT EXAMPLE:
-  // If you want to bring in the mainnet DAI contract it would look like:
-  // const mainnetContracts = useContractLoader(mainnetProvider, contractConfig);
 
-  // If you want to call a function on a new block
-  // useOnBlock(mainnetProvider, () => {
-  //   console.log(`⛓ A new mainnet block is here: ${mainnetProvider._lastBlockNumber}`);
-  // });
-
-  // Then read your DAI balance like:
-  // const myMainnetDAIBalance = useContractReader(mainnetContracts, "DAI", "balanceOf", [
-  //   "0x34aA3F359A9D614239015126635CE7732c18fDF3",
-  // ]);
-
-  /*
-  const addressFromENS = useResolveName(mainnetProvider, "austingriffith.eth");
-  console.log("🏷 Resolved austingriffith.eth as:",addressFromENS)
-  */
   const loadWeb3Modal = useCallback(async () => {
     try {
       const provider = await web3Modal.connect();
@@ -453,9 +355,10 @@ function App(props) {
     setCurrentMultiSigAddress(value);
   };
 
-  // console.log("currentMultiSigAddress:", currentMultiSigAddress);
 
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
+  if (DEBUG) console.log("COUNTER", counter);
+  counter = counter + 1
 
   const selectNetworkOptions = [];
   for (const id in NETWORKS) {
@@ -624,14 +527,17 @@ function App(props) {
             contractAddress={contractAddress}
             // mainnetProvider={mainnetProvider}
             localProvider={localProvider}
-            // price={price}
+            gasPriceDouble={gasPrice}
             tx={tx}
             readContracts={readContracts}
             userSigner={userSigner}
             DEBUG={DEBUG}
+            writeContracts={writeContracts}
             blockExplorer={blockExplorer}
             signaturesRequired={signaturesRequired}
             executeTransactionEvents={executeTransactionEvents}
+            currentOwners={currentOwners}
+
 
           />
         </Route>
@@ -644,7 +550,7 @@ function App(props) {
             // mainnetProvider={mainnetProvider}
             localProvider={localProvider}
             yourLocalBalance={yourLocalBalance}
-            // price={price}
+            gasPriceDouble={gasPrice}
 
             tx={tx}
             writeContracts={writeContracts}
@@ -657,17 +563,18 @@ function App(props) {
           <TxHistory
             poolServerUrl={BACKEND_URL}
             contractName={contractName}
-            contractAddress={contractAddress}
+            address={address}
+            userSigner={userSigner}
             // mainnetProvider={mainnetProvider}
             localProvider={localProvider}
-            // price={price}
+            yourLocalBalance={yourLocalBalance}
+            gasPriceDouble={gasPrice}
+
             tx={tx}
+            writeContracts={writeContracts}
             readContracts={readContracts}
-            userSigner={userSigner}
-            DEBUG={DEBUG}
             blockExplorer={blockExplorer}
             signaturesRequired={signaturesRequired}
-            executeTransactionEvents={executeTransactionEvents}
 
           />
         </Route>

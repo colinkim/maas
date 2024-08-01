@@ -31,7 +31,7 @@ app.post("/", function (request, response) {
   if (!transactions[key]) {
     transactions[key] = {};
   }
-  transactions[key][request.body.hash] = request.body;
+  transactions[key][request.body.txHash] = request.body;
   console.log("transactions", transactions);
 });
 
@@ -52,6 +52,26 @@ if (fs.existsSync("server.key") && fs.existsSync("server.cert")) {
     console.log("HTTP Listening on port:", server.address().port);
   });
 }
+
+app.post("/updateStatus", function (req, res) {
+  console.log("UPDATE STATUS POST!!!!", req.body); // your JSON
+
+  const { address, chainId, txHash, status } = req.body;
+
+  if (!address || !chainId || !txHash || !status) {
+    return res.status(400).send("Missing required parameters");
+  }
+
+  const key = `${address}_${chainId}`;
+
+  if (transactions[key] && transactions[key][txHash]) {
+    transactions[key][txHash].status = status;
+    console.log(`Updated status for transaction ${txHash} to ${status}`);
+    res.status(200).send(`Transaction status updated to ${status}`);
+  } else {
+    res.status(404).send("Transaction not found");
+  }
+});
 
 
 // Add this at the top of your backend file
