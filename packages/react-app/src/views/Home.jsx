@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Balance, Address, TransactionListItem, Owners } from "../components";
 import QR from "qrcode.react";
 import { List, Button, Flex, Tag } from "antd";
@@ -8,13 +8,14 @@ export default function Home({
   localProvider,
   price,
   blockExplorer,
-  executeTransactionEvents,
   contractName,
   readContracts,
   walletName,
-  currentOwners,
-  signaturesRequired,
 }) {
+
+
+
+
   return (
     <>
       <div style={{ padding: 16, maxWidth: 850, margin: "auto" }}>
@@ -69,7 +70,7 @@ export default function Home({
 
         </div>
         <div style={{ padding: 16 }}>
-          <Owners currentOwners={currentOwners} signaturesRequired={signaturesRequired} blockExplorer={blockExplorer} />
+          <Owners contractAddress={contractAddress ? contractAddress : ""} walletName={walletName} readContracts={readContracts} contractName={contractName} blockExplorer={blockExplorer} />
         </div>
         {/* <div style={{padding:64}}>
         <Button type={"primary"} onClick={()=>{

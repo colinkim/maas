@@ -904,87 +904,6 @@ const MULTISIGABI = [
 
 // Mainnet DAI, Optimism and Arbitrium Rollup Contracts with local addresses
 module.exports = {
-  1: { //mainnet
-    contracts: {
-      DAI: {
-        address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-        abi: DAIABI,
-      },
-      UNI: {
-        address: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
-        abi: ERC20ABI,
-      },
-      MultiSigFactory: {
-        address: "0x582887d429ab11b8e0b9cbe708bab26dea911eb3", // deployed by Austin in april 22, might want to update it to a newer version down the road
-        abi: MULTISIGABI,
-      },
-    },
-  },
-  3: { //ropsten
-    contracts: {
-      MultiSigFactory: {
-        address: "0x994043CA30C9273D3a6eb3a98E49d02F72327112", // deployed by gak in april 22, might want to update it to a newer version down the road
-        abi: MULTISIGABI,
-      },
-    },
-  },
-  4: { //rinkeby
-    contracts: {
-      MultiSigFactory: {
-        address: "0xc827482a5F57132dCC0511901caC9243C35DdB33", // deployed by gak in april 22, might want to update it to a newer version down the road
-        abi: MULTISIGABI,
-      },
-    },
-  },
-  5: { //goerli
-    contracts: {
-      MultiSigFactory: {
-        address: "0x1Dd2afD391b29a7e3618c3DaC720A94FFCf46cc8", // deployed by gak in april 22, might want to update it to a newer version down the road
-        abi: MULTISIGABI,
-      },
-    },
-  },
-  10: { //optimisim
-    contracts: {
-      MultiSigFactory: {
-        address: "0x582887d429AB11b8e0b9Cbe708BAB26DEa911EB3", // deployed by gak in april 22, might want to update it to a newer version down the road
-        abi: MULTISIGABI,
-      },
-    },
-  },
-  42: { //kovan
-    contracts: {
-      MultiSigFactory: {
-        address: "0x88d274A8917E6f7567C304467eFbE9De3C985Ba4", // deployed by gak in april 22, might want to update it to a newer version down the road
-        abi: MULTISIGABI,
-      },
-    },
-  },
-  100: { //xdai
-    contracts: {
-      MultiSigFactory: {
-        address: "0x582887d429AB11b8e0b9Cbe708BAB26DEa911EB3", // deployed by gak in april 22, might want to update it to a newer version down the road
-        abi: MULTISIGABI,
-      },
-    },
-  },
-  137: { //polygon
-    contracts: {
-      MultiSigFactory: {
-        address: "0x582887d429AB11b8e0b9Cbe708BAB26DEa911EB3", // deployed by gak in april 22, might want to update it to a newer version down the road
-        abi: MULTISIGABI,
-      },
-    },
-  },
-  43113: {
-    contracts: {
-      MultiSigFactory: {
-        address: "0x6a85d3a8F4551C316A86330560141676D1705052", // deployed by gak in april 22, might want to update it to a newer version down the road
-        abi: MULTISIGABI,
-      },
-    },
-
-  },
   80002: {
     contracts: {
       MultiSigFactory: {
@@ -997,7 +916,7 @@ module.exports = {
   97: {
     contracts: {
       MultiSigFactory: {
-        address: "0x12ce25bB446b3b29cE410E70aeE31372Ee560fE8",
+        address: "0xb1E1bA4B478aFbbd46342d52FAfC80dbCd0f9640",
         abi: MULTISIGABI,
       },
     },

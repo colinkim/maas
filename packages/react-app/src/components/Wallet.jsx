@@ -76,8 +76,6 @@ export default function Wallet(props) {
 
   const handleAddOrRemoveToken = async () => {
 
-    console.log("TEST");
-    console.log(BACKEND_URL);
     const existingToken = tokens.find(token => token.address === newTokenAddress);
     if (existingToken) {
       // Remove token

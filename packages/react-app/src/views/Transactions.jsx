@@ -6,7 +6,9 @@ import { ethers } from "ethers";
 import { Address, AddressInput, Balance, Blockie, TransactionListItem } from "../components";
 import { usePoller } from "eth-hooks";
 import { useHistory } from "react-router-dom";
-
+import {
+  useContractReader,
+} from "eth-hooks";
 const axios = require("axios");
 
 const DEBUG = false;
@@ -14,13 +16,10 @@ const DEBUG = false;
 export default function Transactions({
   poolServerUrl,
   contractName,
-  signaturesRequired,
   address,
   userSigner,
   mainnetProvider,
   localProvider,
-  gasPriceDouble,
-  tx,
   readContracts,
   writeContracts,
   blockExplorer,
@@ -29,6 +28,7 @@ export default function Transactions({
   const [transactions, setTransactions] = useState();
   const [loading, setLoading] = useState(false);
 
+  const signaturesRequired = useContractReader(readContracts, contractName, "required");
 
 
   const handleConfirmTransaction = async (item) => {
@@ -206,7 +206,6 @@ export default function Transactions({
         `${poolServerUrl}${readContracts[contractName].address}_${localProvider._network.chainId}`
       );
 
-      console.log("backend stuff res", res.data);
 
       const newTransactions = await Promise.all(
         Object.values(res.data)
@@ -229,7 +228,6 @@ export default function Transactions({
           })
       );
 
-      console.log("backend stuff newTransactions", newTransactions);
       setTransactions(newTransactions);
     } catch (error) {
       console.error("Error fetching transactions:", error);

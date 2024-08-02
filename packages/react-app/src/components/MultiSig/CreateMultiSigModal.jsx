@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Button, Modal, InputNumber } from "antd";
+import { Button, Modal, InputNumber, notification } from "antd";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import { ethers } from "ethers";
 import { Input } from "antd";
+import { useLocalStorage } from "../../hooks";
 
 import { AddressInput, EtherInput } from "..";
 import CreateModalSentOverlay from "./CreateModalSentOverlay";
@@ -18,7 +19,18 @@ export default function CreateMultiSigModal({
   contractName,
   isCreateModalVisible,
   setIsCreateModalVisible,
+  localProvider,
+  userSigner,
+  multiSigs,
+  setMultiSigs,
+  setCurrentMultiSigAddress,
+  multiSigWalletABI,
+  targetNetwork,
+
 }) {
+  const [importedMultiSigs, setImportedMultiSigs] = useLocalStorage("importedMultiSigs");
+  const [network, setNetwork] = useState(targetNetwork.name);
+
   const [pendingCreate, setPendingCreate] = useState(false);
   const [txSent, setTxSent] = useState(false);
   const [txError, setTxError] = useState(false);
@@ -118,6 +130,71 @@ export default function CreateMultiSigModal({
     setSignaturesRequired(false);
   };
 
+  // const handleSubmit = async () => {
+  //   try {
+  //     setPendingCreate(true);
+
+  //     if (!validateFields()) {
+  //       setPendingCreate(false);
+  //       throw "Field validation failed.";
+  //     }
+
+  //     if (!writeContracts) {
+  //       throw new Error("writeContracts");
+  //     }
+  //     if (!writeContracts[contractName]) {
+  //       throw new Error("writeContracts[contractName]");
+  //     }
+  //     if (!writeContracts[contractName].create) {
+  //       throw new Error("Contract method 'create' is already created");
+  //     }
+
+
+
+  //     //CREATE MULTISIGWALLET using MULTISIGWALLETFACTORY
+  //     //Variables:
+  //     //kind[uint8]: Type of Wallet -> 0 (Default Multi Sig Wallet)
+  //     //owners[address[]] -> Lost of Owners
+  //     //nomConfirmationRequired[uint256] -> Number of Confirmations Required
+  //     //erc20Address[address] -> Not requried for Default Multi Sig Wallet use Empty 0x0000000000000000000000000000000000000000
+
+  //     console.log("\n\n\n\n\n\n");
+  //     console.log("writeContracts[contractName]")
+  //     console.log(writeContracts[contractName])
+  //     const result = await writeContracts[contractName].create(0, owners, signaturesRequired, "0x0000000000000000000000000000000000000000");
+
+
+  //     const response = await fetch(`${BACKEND_URL}addMultiSigWallet`, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         address: result.contractAddress, // Assuming the contract address is returned
+  //         chainId: selectedChainId,
+  //         name: walletName,
+  //         ownerAddress: address,
+  //       }),
+  //     });
+  //     const backendResult = await response.json();
+  //     if (backendResult.success) {
+
+  //       // Update state and close modal
+  //       setPendingCreate(false);
+  //       setTxSuccess(true);
+  //       setTimeout(() => {
+  //         setIsCreateModalVisible(false);
+  //         resetState();
+  //         window.location.reload();
+  //       }, 2500);
+  //     }
+  //   } catch (e) {
+  //     console.error("CREATE MULTI-SIG SUBMIT FAILED: ", e);
+  //     setPendingCreate(false);
+  //   }
+  // };
+
+
   const handleSubmit = async () => {
     try {
       setPendingCreate(true);
@@ -137,51 +214,95 @@ export default function CreateMultiSigModal({
         throw new Error("Contract method 'create' is already created");
       }
 
-
-
-      //CREATE MULTISIGWALLET using MULTISIGWALLETFACTORY
-      //Variables:
-      //kind[uint8]: Type of Wallet -> 0 (Default Multi Sig Wallet)
-      //owners[address[]] -> Lost of Owners
-      //nomConfirmationRequired[uint256] -> Number of Confirmations Required
-      //erc20Address[address] -> Not requried for Default Multi Sig Wallet use Empty 0x0000000000000000000000000000000000000000
-
       console.log("\n\n\n\n\n\n");
-      console.log("writeContracts[contractName]")
-      console.log(writeContracts[contractName])
-      const result = await tx(
-        writeContracts[contractName].create(0, owners, signaturesRequired, "0x0000000000000000000000000000000000000000")
-      );
+      console.log("writeContracts[contractName]");
+      console.log(writeContracts[contractName]);
 
-      const response = await fetch(`${BACKEND_URL}addMultiSigWallet`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          address: result.contractAddress, // Assuming the contract address is returned
-          chainId: selectedChainId,
-          name: walletName,
-          ownerAddress: address,
-        }),
+      const contract = writeContracts[contractName];
+      const transaction = await contract.populateTransaction.create(0, owners, signaturesRequired, "0x0000000000000000000000000000000000000000");
+
+      // Add 20% buffer to estimated gas limit
+      const price = await localProvider.getGasPrice();
+      const createTX = await userSigner.sendTransaction({
+        to: contract.address,
+        data: transaction.data,
+        gasPrice: price
       });
-      const backendResult = await response.json();
-      if (backendResult.success) {
 
-        // Update state and close modal
-        setPendingCreate(false);
-        setTxSuccess(true);
-        setTimeout(() => {
-          setIsCreateModalVisible(false);
-          resetState();
-          window.location.reaload();
-        }, 2500);
+      notification.info({
+        message: "Transaction Sent",
+        description: "Please wait while the transaction is being processed.",
+        placement: "bottomRight",
+      });
+
+      console.log("Transaction sent:", createTX.hash);
+      const receipt = await createTX.wait(3);
+
+      console.log("Transaction mined. Receipt:", receipt);
+
+      const newWalletAddress = ethers.utils.defaultAbiCoder.decode(
+        ['address', 'address'],
+        receipt.logs[0].data
+      )[1];
+
+      if (receipt.status === 1) {
+        console.log("Transaction was successful!");
+        notification.success({
+          message: "Transaction Successful",
+          description: "The transaction was mined and executed successfully.",
+          placement: "bottomRight",
+        });
+
+        console.log("chainId", localProvider._network.chainId);
+        console.log("newWalletAddress", newWalletAddress);
+        console.log("createTX.hash", createTX.hash);
+        console.log("status", "COMPLETED");
+        const response = await fetch(`${BACKEND_URL}addWallet`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            multiSigWalletAddress: newWalletAddress, // Using receipt.contractAddress instead of result.contractAddress
+            chainId: selectedChainId,
+            walletName: walletName,
+            userAddress: address,
+
+          }),
+        });
+
+        const backendResult = await response.json();
+        if (backendResult.success) {
+
+          // Update state and close modal
+          setPendingCreate(false);
+          setTxSuccess(true);
+          setTimeout(() => {
+            setIsCreateModalVisible(false);
+            resetState();
+            window.location.reload();
+          }, 2500);
+        }
+      } else {
+        console.log("Transaction failed!");
+        notification.error({
+          message: "Transaction Failed",
+          description: "The transaction was mined but failed to execute.",
+          placement: "bottomRight",
+        });
       }
-    } catch (e) {
-      console.error("CREATE MULTI-SIG SUBMIT FAILED: ", e);
+    } catch (error) {
+      console.error("CREATE MULTI-SIG SUBMIT FAILED: ", error);
+      notification.error({
+        message: "Transaction Error",
+        description: "An error occurred while processing the transaction.",
+        placement: "bottomRight",
+      });
+    } finally {
       setPendingCreate(false);
     }
   };
+
 
   return (
     <>

@@ -11,7 +11,8 @@ import {
 import { useExchangeEthPrice } from "eth-hooks/dapps/dex";
 import { useEventListener } from "eth-hooks/events/";
 import React, { useCallback, useEffect, useState } from "react";
-import { Link, Route, Switch, useLocation } from "react-router-dom";
+import { Link, Route, Switch, useLocation, useHistory } from "react-router-dom";
+
 import "./App.css";
 import {
   Account,
@@ -53,6 +54,7 @@ const web3Modal = Web3ModalSetup();
 
 function App(props) {
   const networkOptions = [initialNetwork.name];
+  const history = useHistory();
 
   const [injectedProvider, setInjectedProvider] = useState();
   const [address, setAddress] = useState();
@@ -62,8 +64,6 @@ function App(props) {
 
   const cachedNetwork = window.localStorage.getItem("network");
   let targetNetwork = NETWORKS[cachedNetwork || "polygonAmoy"];
-
-  const [currentOwners, setCurrentOwners] = useState();
 
 
   if (!targetNetwork) targetNetwork = NETWORKS["polygonAmoy"];
@@ -89,39 +89,8 @@ function App(props) {
     }, 1);
   };
 
-  const useGasPrice = (localProvider) => {
-    const [gasPrice, setGasPrice] = useState();
-
-    useEffect(() => {
-      const fetchGasPrice = async () => {
-        if (localProvider) {
-          try {
-            const price = await localProvider.getGasPrice();
-            const doubledPrice = price.mul(2); // Double the price
-            console.log("Doubled Gas Price")
-
-            console.log(doubledPrice.toNumber())
-            setGasPrice(ethers.utils.formatUnits(doubledPrice, 'gwei'));
-          } catch (error) {
-            console.error('Error fetching gas price:', error);
-          }
-        }
-      };
-
-      fetchGasPrice();
-
-      // Optional: Set up an interval to periodically update the gas price
-      const interval = setInterval(fetchGasPrice, 15000); // Update every 15 seconds
-
-      return () => clearInterval(interval);
-    }, [localProvider]);
-
-    return gasPrice;
-  };
 
 
-  /* 🔥 This hook will get the price of Gas from ⛽️ EtherGasStation */
-  const gasPrice = useGasPrice(localProvider);
   // Use your injected provider from 🦊 Metamask or if you don't have it then instantly generate a 🔥 burner wallet.
   const userProviderAndSigner = useUserProviderAndSigner(injectedProvider, localProvider);
   const userSigner = userProviderAndSigner.signer;
@@ -141,7 +110,6 @@ function App(props) {
     userSigner && userSigner.provider && userSigner.provider._network && userSigner.provider._network.chainId;
 
 
-  const tx = Transactor(userSigner, gasPrice);
 
   const yourLocalBalance = useBalance(localProvider, address);
 
@@ -159,105 +127,111 @@ function App(props) {
   const [multiSigs, setMultiSigs] = useState([]);
   const [currentMultiSigAddress, setCurrentMultiSigAddress] = useState();
 
-  const [importedMultiSigs] = useLocalStorage("importedMultiSigs");
-  const [multiSigNames, setMultiSigNames] = useState([]);
 
-  const getCurrentOwners = useContractReader(readContracts, contractName, "getOwners");
-
-
-  useEffect(async () => {
-    if (getCurrentOwners) {
-      setCurrentOwners(getCurrentOwners);
-    }
-  }, [getCurrentOwners]);
-
-
-  useEffect(async () => {
-
-
-    if (currentOwners && DEBUG) {
-      console.log("currentOwners")
-      console.log(currentOwners)
-    }
-  }, [currentOwners]);
 
   useEffect(async () => {
     if (address) {
-      let multiSigsForUser = []
+      const response = await fetch(`${BACKEND_URL}getUserWallets/${address}/${targetNetwork.chainId}`);
+      const userWalletData = await response.json();
 
-      if (importedMultiSigs && importedMultiSigs[targetNetwork.name]) {
-        multiSigsForUser = [...new Set([...importedMultiSigs[targetNetwork.name], ...multiSigsForUser])];
-      }
+      // Convert to array if it's a single object
+      const userWalletList = Array.isArray(userWalletData) ? userWalletData : [userWalletData];
 
-      if (multiSigsForUser.length > 0) {
-        const recentMultiSigAddress = multiSigsForUser[multiSigsForUser.length - 1];
-        if (recentMultiSigAddress !== currentMultiSigAddress) setContractNameForEvent(null);
+      if (userWalletList.length > 0) {
+        const savedWallet = localStorage.getItem('currentMultiSigAddress');
 
-        const response = await fetch(`${BACKEND_URL}getMultiSigWallets/${address}/${targetNetwork.chainId}`);
-        const customNames = await response.json();
-
-        console.log("CUSTOM NAMES")
-        console.log(customNames)
-        console.log(multiSigsForUser)
-
-        // Combine existing multiSigs with custom names
-        const combinedMultiSigs = multiSigsForUser.map(address => ({
-          address,
-          name: customNames[address] || address,
-        }));
-
-        const savedAddress = localStorage.getItem('currentMultiSigAddress');
-        if (savedAddress) {
-          setCurrentMultiSigAddress(savedAddress);
-          const currentWalletName = customNames[savedAddress];
-          setCurrentMultiSigName(currentWalletName);
+        if (savedWallet) {
+          setCurrentMultiSigAddress(savedWallet);
+          const savedWalletName = localStorage.getItem('currentMultiSigName');
+          setCurrentMultiSigName(savedWalletName);
 
 
-        }
-        else {
-          setCurrentMultiSigAddress(recentMultiSigAddress);
-          const currentWalletName = customNames[recentMultiSigAddress];
-          setCurrentMultiSigName(currentWalletName);
+        } else {
+          const recentMultiSig = userWalletList[userWalletList.length - 1];
+          setCurrentMultiSigAddress(recentMultiSig.address);
+          setCurrentMultiSigName(recentMultiSig.name);
 
         }
 
-        setMultiSigs(combinedMultiSigs);
+
       }
+
+      console.log("\n\n\n");
+      console.log("List of User Wallets");
+      console.log(userWalletList);
+
+      setMultiSigs(userWalletList);
+
+
+      // console.log(userWalletList.json())
+      // if (userWalletList.length > 0) {
+      //   const recentMultiSigAddress = userWalletList[userWalletList.length - 1];
+
+      //   const savedAddress = localStorage.getItem('currentMultiSigAddress');
+      //   if (savedAddress) {
+      //     setCurrentMultiSigAddress(savedAddress);
+      //     const currentWalletName = customNames[savedAddress];
+      //     setCurrentMultiSigName(currentWalletName);
+
+
+      //   } else {
+      //     setCurrentMultiSigAddress(recentMultiSigAddress);
+      //     const currentWalletName = customNames[recentMultiSigAddress];
+      //     setCurrentMultiSigName(currentWalletName);
+
+      //   }
+
+      // }
+
+      // if (importedMultiSigs && importedMultiSigs[targetNetwork.name]) {
+      //   multiSigsForUser = [...new Set([...importedMultiSigs[targetNetwork.name], ...multiSigsForUser])];
+      // }
+
+      // if (multiSigsForUser.length > 0) {
+      //   const recentMultiSigAddress = multiSigsForUser[multiSigsForUser.length - 1];
+      //   if (recentMultiSigAddress !== currentMultiSigAddress) setContractNameForEvent(null);
+
+      //   const response = await fetch(`${BACKEND_URL}getUserWallets/${address}/${targetNetwork.chainId}`);
+      //   const customNames = await response.json();
+
+      //   customNames.forEach((item, index) => {
+      //     console.log(`Item ${index + 1}:`, item);
+      //   });
+
+      //   console.log("CUSTOM NAMES")
+      //   console.log(customNames)
+      //   console.log(multiSigsForUser)
+
+      //   // Combine existing multiSigs with custom names
+      //   const combinedMultiSigs = multiSigsForUser.map(address => ({
+      //     address,
+      //     name: customNames[address] || address,
+      //   }));
+
+      //   const savedAddress = localStorage.getItem('currentMultiSigAddress');
+      //   if (savedAddress) {
+      //     setCurrentMultiSigAddress(savedAddress);
+      //     const currentWalletName = customNames[savedAddress];
+      //     setCurrentMultiSigName(currentWalletName);
+
+
+      //   }
+      //   else {
+      //     setCurrentMultiSigAddress(recentMultiSigAddress);
+      //     const currentWalletName = customNames[recentMultiSigAddress];
+      //     setCurrentMultiSigName(currentWalletName);
+
+      //   }
+      //   console.log(combinedMultiSigs)
+      //   setMultiSigs(combinedMultiSigs);
+      // }
     }
   }, [address]);
 
 
-  const [signaturesRequired, setSignaturesRequired] = useState();
-
-  const signaturesRequiredContract = useContractReader(readContracts, contractName, "required");
-  useEffect(() => {
-
-    setSignaturesRequired(signaturesRequiredContract);
-    if (DEBUG) {
-      console.log("signaturesRequiredContract")
-      console.log(signaturesRequiredContract)
-    }
-
-
-  }, [signaturesRequiredContract]);
 
   const [contractNameForEvent, setContractNameForEvent] = useState();
 
-  async function getContractValues() {
-    if (!readContracts.MultiSigWallet) {
-      console.error("MultiSigWallet contract not initialized");
-      return;
-    }
-
-    try {
-      const latestSignaturesRequired = await readContracts.MultiSigWallet.required();
-      setSignaturesRequired(latestSignaturesRequired);
-
-    } catch (error) {
-      console.error("Error fetching contract values:", error);
-    }
-
-  }
 
 
   useEffect(() => {
@@ -268,19 +242,10 @@ function App(props) {
       writeContracts.MultiSigWallet = new ethers.Contract(currentMultiSigAddress, multiSigWalletABI, userSigner);
 
       setContractNameForEvent("MultiSigWallet");
-      getContractValues();
     }
   }, [currentMultiSigAddress, readContracts, writeContracts]);
 
 
-  const [ownerEvents, setOwnerEvents] = useState();
-  const [executeTransactionEvents, setExecuteTransactionEvents] = useState();
-
-
-  useEffect(() => {
-    setExecuteTransactionEvents([]);
-
-  }, [currentMultiSigAddress]);
 
 
   const loadWeb3Modal = useCallback(async () => {
@@ -295,6 +260,15 @@ function App(props) {
 
       provider.on("accountsChanged", () => {
         console.log(`account changed!`);
+        localStorage.setItem('currentMultiSigAddress', "");
+        localStorage.setItem('currentMultiSigName', "");
+        localStorage.setItem('userTokens', "");
+        localStorage.setItem('selectedTokenAddress', "");
+        localStorage.setItem('selectedToken', "");
+
+
+        history.push("/");
+        window.location.reload();
         setInjectedProvider(new ethers.providers.Web3Provider(provider));
       });
 
@@ -321,7 +295,6 @@ function App(props) {
           writeContracts.MultiSigWallet = new ethers.Contract(currentMultiSigAddress, multiSigWalletABI, userSigner);
 
           setContractNameForEvent("MultiSigWallet");
-          await getContractValues();
         } catch (error) {
           console.error("Error initializing contracts:", error);
         }
@@ -333,28 +306,28 @@ function App(props) {
 
 
 
-  useEffect(() => {
-    async function initializeContracts() {
-      if (localProvider && userSigner) {
-        const currentWallet = multiSigs.find(wallet => wallet.address === currentMultiSigAddress);
+  // useEffect(() => {
+  //   async function initializeContracts() {
+  //     if (localProvider && userSigner) {
+  //       const currentWallet = multiSigs.find(wallet => wallet.address === currentMultiSigAddress);
 
-        setCurrentMultiSigName(currentWallet.name);
-      }
-    }
+  //       setCurrentMultiSigName(currentWallet.name);
+  //     }
+  //   }
 
-    initializeContracts();
-  }, [currentMultiSigAddress]);
+  //   initializeContracts();
+  // }, [currentMultiSigAddress]);
 
   const faucetAvailable = localProvider && localProvider.connection && targetNetwork.name.indexOf("local") !== -1;
 
   const userHasMultiSigs = currentMultiSigAddress ? true : false;
 
-  const handleMultiSigChange = value => {
+  const handleMultiSigChange = (value, option) => {
     setContractNameForEvent(null);
     localStorage.setItem('currentMultiSigAddress', value);
+    localStorage.setItem('currentMultiSigName', option.name);
     setCurrentMultiSigAddress(value);
   };
-
 
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   if (DEBUG) console.log("COUNTER", counter);
@@ -377,6 +350,13 @@ function App(props) {
         if (targetNetwork.chainId != NETWORKS[value].chainId) {
           window.localStorage.setItem("network", value);
           setTimeout(() => {
+            localStorage.setItem('currentMultiSigAddress', "");
+            localStorage.setItem('currentMultiSigName', "");
+            localStorage.setItem('userTokens', "");
+            localStorage.setItem('selectedTokenAddress', "");
+            localStorage.setItem('selectedToken', "");
+
+            history.push("/");
             window.location.reload();
           }, 1);
         }
@@ -435,16 +415,21 @@ function App(props) {
               selectedChainId={selectedChainId}
               // mainnetProvider={mainnetProvider}
               address={address}
-              tx={tx}
+              localProvider={localProvider}
+              userSigner={userSigner}
               writeContracts={writeContracts}
               contractName={"MultiSigFactory"}
               isCreateModalVisible={isCreateModalVisible}
               setIsCreateModalVisible={setIsCreateModalVisible}
+              multiSigs={multiSigs}
               setMultiSigs={setMultiSigs}
               setCurrentMultiSigAddress={setCurrentMultiSigAddress}
+              targetNetwork={targetNetwork}
+
             />
             <ImportMultiSigModal
               // mainnetProvider={mainnetProvider}
+              selectedChainId={selectedChainId}
               ownerAddress={address}
               targetNetwork={targetNetwork}
               networkOptions={selectNetworkOptions}
@@ -454,9 +439,13 @@ function App(props) {
               multiSigWalletABI={multiSigWalletABI}
               localProvider={localProvider}
             />
-            <Select value={[currentMultiSigAddress]} style={{ width: 120, marginRight: 5, }} onChange={handleMultiSigChange}>
+            <Select
+              value={currentMultiSigAddress}
+              style={{ width: 120, marginRight: 5 }}
+              onChange={(value, option) => handleMultiSigChange(value, option)}
+            >
               {multiSigs.map((wallet, index) => (
-                <Option key={index} value={wallet.address}>
+                <Option key={index} value={wallet.address} name={wallet.name}>
                   {wallet.name}
                 </Option>
               ))}
@@ -515,28 +504,22 @@ function App(props) {
               blockExplorer={blockExplorer}
               contractName={contractName}
               readContracts={readContracts}
-              currentOwners={currentOwners}
-              signaturesRequired={signaturesRequired}
             />
           )}
         </Route>
         <Route path="/transactions">
           <CreateTransaction
+            currentMultiSigName={currentMultiSigName}
             poolServerUrl={BACKEND_URL}
             contractName={contractName}
             contractAddress={contractAddress}
             // mainnetProvider={mainnetProvider}
             localProvider={localProvider}
-            gasPriceDouble={gasPrice}
-            tx={tx}
             readContracts={readContracts}
             userSigner={userSigner}
             DEBUG={DEBUG}
             writeContracts={writeContracts}
             blockExplorer={blockExplorer}
-            signaturesRequired={signaturesRequired}
-            executeTransactionEvents={executeTransactionEvents}
-            currentOwners={currentOwners}
 
 
           />
@@ -550,13 +533,9 @@ function App(props) {
             // mainnetProvider={mainnetProvider}
             localProvider={localProvider}
             yourLocalBalance={yourLocalBalance}
-            gasPriceDouble={gasPrice}
-
-            tx={tx}
             writeContracts={writeContracts}
             readContracts={readContracts}
             blockExplorer={blockExplorer}
-            signaturesRequired={signaturesRequired}
           />
         </Route>
         <Route path="/history">
@@ -568,13 +547,9 @@ function App(props) {
             // mainnetProvider={mainnetProvider}
             localProvider={localProvider}
             yourLocalBalance={yourLocalBalance}
-            gasPriceDouble={gasPrice}
-
-            tx={tx}
             writeContracts={writeContracts}
             readContracts={readContracts}
             blockExplorer={blockExplorer}
-            signaturesRequired={signaturesRequired}
 
           />
         </Route>

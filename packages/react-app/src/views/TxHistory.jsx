@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { List } from "antd";
+import { Spin, List } from "antd";
 import { TransactionListItem } from "../components";
 import { usePoller } from "eth-hooks";
 import { ethers } from "ethers";
@@ -9,13 +9,10 @@ const axios = require("axios");
 export default function Transactions({
   poolServerUrl,
   contractName,
-  signaturesRequired,
   address,
   userSigner,
   mainnetProvider,
   localProvider,
-  gasPriceDouble,
-  tx,
   readContracts,
   writeContracts,
   blockExplorer,
@@ -29,12 +26,10 @@ export default function Transactions({
           poolServerUrl + readContracts[contractName].address + "_" + localProvider._network.chainId
         );
 
-        console.log("backend stuff res", res.data);
 
         const newTransactions = [];
         for (const key in res.data) {
 
-          console.log("backend stuff res.data[key]", res.data[key]);
           const txData = res.data[key];
           if (txData.status == "COMPLETED") {
             const txID = ethers.BigNumber.from(txData.txID).toNumber();
@@ -51,8 +46,6 @@ export default function Transactions({
 
         }
 
-        console.log("backend stuff newTransactions", newTransactions);
-
         setTransactions(newTransactions);
       } catch (error) {
         console.error("Error fetching transactions:", error);
@@ -60,6 +53,11 @@ export default function Transactions({
     };
     if (readContracts[contractName]) getTransactions();
   }, 10000);
+
+  if (!address || !transactions) {
+    return <Spin style={{ marginTop: '30px', }} />;
+  }
+
 
   return (
     <div style={{ maxWidth: 850, margin: "auto", marginTop: 32, marginBottom: 32 }}>

@@ -114,7 +114,7 @@ export default function Balance(props) {
   useEffect(() => {
     const intervalId = setInterval(() => {
       getBalance();
-    }, 5000);
+    }, 10000);
 
     getBalance();
 
@@ -154,7 +154,7 @@ export default function Balance(props) {
   }
 
   if (!symbol) {
-    return <Spin style={{ marginRight: '5px' }} />;
+    return <Spin style={{ marginRight: '10px', marginTop: '5px' }} />;
   }
 
 

@@ -16,6 +16,7 @@ export default function ImportMultiSigModal({
   setCurrentMultiSigAddress,
   multiSigWalletABI,
   localProvider,
+  selectedChainId
 }) {
   const [importedMultiSigs, setImportedMultiSigs] = useLocalStorage("importedMultiSigs");
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -43,18 +44,25 @@ export default function ImportMultiSigModal({
       setPendingImport(true);
 
       const contract = new ethers.Contract(address, multiSigWalletABI, localProvider);
-      await contract.getOwners();
+      const owners = await contract.getOwners();
+      const isOwner = owners.includes(ownerAddress);
 
-      const response = await fetch(`${BACKEND_URL}addMultiSigWallet`, {
+      if (!isOwner) {
+        setError(true);
+        setPendingImport(false);
+      }
+
+      const response = await fetch(`${BACKEND_URL}addWallet`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          address: address,
-          chainId: targetNetwork.chainId,
-          name: walletName,
-          ownerAddress: ownerAddress,
+          multiSigWalletAddress: address, // Using receipt.contractAddress instead of result.contractAddress
+          chainId: selectedChainId,
+          walletName: walletName,
+          userAddress: ownerAddress,
+
         }),
       });
 
@@ -132,7 +140,7 @@ export default function ImportMultiSigModal({
           >
             {networkOptions}
           </Select>
-          {error && <Alert message="Unable to import: this doesn't seem like a multisig." type="error" showIcon />}
+          {error && <Alert message="Unable to import: Please only import Multi.Sig.Wallets that you own." type="error" showIcon />}
         </div>
       </Modal>
     </>

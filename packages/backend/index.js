@@ -121,23 +121,32 @@ app.get("/getUserTokens/:address/:chainId", function (req, res) {
 // Add this at the top of your backend file
 let userWallets = {};
 
-// Modify the route to handle token addition
 app.post("/addWallet", function (request, response) {
   const { userAddress, chainId, multiSigWalletAddress, walletName } = request.body;
   const key = `${userAddress}_${chainId}`;
 
+  // Initialize the user's wallets if they don't exist
   if (!userWallets[key]) {
     userWallets[key] = [];
   }
 
-  const existingWallet = userWallets[key].find(wallet => wallet.multiSigWalletAddress === multiSigWalletAddress);
-  if (!existingWallet) {
-    userWallets[key].push({ multiSigWalletAddress: multiSigWalletAddress, walletName: walletName });
+  // Check if the wallet already exists for this user-chain combination
+  const walletExists = userWallets[key].some(wallet => wallet.address === multiSigWalletAddress);
+
+  if (walletExists) {
+    return response.status(400).send({
+      success: false,
+      message: "This wallet has already been added for this user and chain ID"
+    });
   }
+
+  // Add the new wallet
+  userWallets[key].push({ address: multiSigWalletAddress, name: walletName });
 
   console.log("User Wallets:", userWallets);
   response.status(200).send({ success: true, wallets: userWallets[key] });
 });
+
 
 // Modify the route to get user tokens
 app.get("/getUserWallets/:address/:chainId", function (req, res) {

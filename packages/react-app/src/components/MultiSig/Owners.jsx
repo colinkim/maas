@@ -1,17 +1,38 @@
-import React from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Select, List, Spin, Collapse, Tag } from "antd";
 import { Address } from "..";
-
+import {
+  useContractReader,
+} from "eth-hooks";
 const { Panel } = Collapse;
 
 export default function Owners({
-  currentOwners,
-  signaturesRequired,
-  blockExplorer
+  contractAddress,
+  // signaturesRequired,
+  blockExplorer,
+  readContracts,
+  contractName
 }) {
+
+  const currentOwners = useContractReader(readContracts, contractName, "getOwners");
+  const signaturesRequired = useContractReader(readContracts, contractName, "required");
+
+
+  useEffect(() => {
+
+    console.log("CHANGED NAME");
+
+
+
+
+  }, [contractName]);
+
+
   if (!currentOwners) {
     return <Spin tip="Loading Owners..." />;
   }
+
+
 
   const owners = new Set();
   const prevOwners = new Set();

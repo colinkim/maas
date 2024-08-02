@@ -8,6 +8,9 @@ import { parseExternalContractTransaction } from "../helpers";
 import { useLocalStorage } from "../hooks";
 import { ethers } from "ethers";
 import { parseEther } from "@ethersproject/units";
+import {
+  useContractReader,
+} from "eth-hooks";
 const { Option } = Select;
 
 const axios = require("axios");
@@ -101,17 +104,15 @@ export default function CreateTransaction({
   contractAddress,
   mainnetProvider,
   localProvider,
-  tx,
-  gasPriceDouble,
   readContracts,
   writeContracts,
   userSigner,
-  signaturesRequired,
   executeTransactionEvents,
   blockExplorer,
+  currentMultiSigName
 }) {
   const history = useHistory();
-
+  const signaturesRequired = useContractReader(readContracts, contractName, "required");
   const [methodName, setMethodName] = useLocalStorage("methodName", "transferFunds")
   const [newSignaturesRequired, setNewSignaturesRequired] = useState(signaturesRequired)
   const [amount, setAmount] = useState();
@@ -321,6 +322,13 @@ export default function CreateTransaction({
             placement: "bottomRight",
           });
 
+          let txStatus = "PENDING"
+
+          if (signaturesRequired === 1) {
+            txStatus = "COMPLETE";
+
+          }
+
           const res = await axios.post(poolServerUrl, {
             chainId: localProvider._network.chainId,
             address: readContracts[contractName]?.address,
@@ -330,6 +338,7 @@ export default function CreateTransaction({
             txID: transactionID,
             transferAmount: amount,
             transferSymbol: transferSymbol,
+            blockExplorer: blockExplorer,
             status: "PENDING"
           });
 
@@ -383,7 +392,7 @@ export default function CreateTransaction({
         <div style={{ margin: 8 }}>
 
 
-          <p style={{ fontSize: '18px', marginBottom: '0' }}><b>Current Balance</b></p>
+          <p style={{ fontSize: '18px', marginBottom: '0' }}><b>{currentMultiSigName} - Wallet Balance</b></p>
           <Balance
             address={contractAddress ? contractAddress : ""}
             provider={localProvider}
@@ -393,7 +402,7 @@ export default function CreateTransaction({
 
           <div style={{ marginTop: 10, padding: 10 }}>
             <Select value={methodName} style={{ width: "100%" }} onChange={setMethodName}>
-              <Option key="transferFunds"><b>Send Transaction</b></Option>
+              <Option key="transferFunds"><b>Send Coin/Token</b></Option>
               <Option key="addOwner"><b>Add Owner</b></Option>
               <Option key="removeOwner"><b>Remove Owner</b></Option>
               <Option key="changeRequirement"><b>Update Signature Requirements</b></Option>
