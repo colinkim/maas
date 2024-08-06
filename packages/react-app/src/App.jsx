@@ -326,6 +326,7 @@ function App(props) {
     setContractNameForEvent(null);
     localStorage.setItem('currentMultiSigAddress', value);
     localStorage.setItem('currentMultiSigName', option.name);
+    setCurrentMultiSigName(option.name);
     setCurrentMultiSigAddress(value);
   };
 

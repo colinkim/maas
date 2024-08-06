@@ -81,6 +81,27 @@ export default function TransactionListItem({ item, mainnetProvider, blockExplor
         </>
       )
     }
+
+    else if (item.methodName == "changeRequirement") {
+      return (
+        <>
+          <span style={{ fontSize: 16, fontWeight: "bold" }}>
+            Change Requirement
+          </span>
+
+          <span style={{ fontSize: 16, fontWeight: "bold" }}>
+            {item.transferAmount} {item.transferSymbol}
+          </span>
+          <b>To</b>
+          <Address address={item.targetAddress} blockExplorer={blockExplorer} fontSize={16} />
+          <>
+            {
+              children
+            }
+          </>
+        </>
+      )
+    }
   }
 
   return <>
