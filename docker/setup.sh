@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DOCKER_IMAGE=$(docker ps --filter name=SCAFFOLD_ETH -q)
-PARENT_DIR="/Users/kimcy/work/web3/tmp/maas"
+PARENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if [ "$1" = "start" ]; then
   # Run Docker container
