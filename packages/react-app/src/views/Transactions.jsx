@@ -44,17 +44,10 @@ export default function Transactions({
       // Add 20% buffer to estimated gas limit
 
       const price = await localProvider.getGasPrice();
-      const priceInWei = ethers.utils.parseUnits(price.toString(), 'gwei');
-
-
-
-
-
-
       const confirmTX = await userSigner.sendTransaction({
         to: contract.address,
         data: transaction.data,
-        gasPrice: 50000000000
+        gasPrice: price
       });
 
 
@@ -86,19 +79,30 @@ export default function Transactions({
         console.log("confirmTX.hash", confirmTX.hash)
         console.log("status", "COMPLETED")
 
-        const res = await axios.post(poolServerUrl + "updateStatus", {
-          chainId: localProvider._network.chainId,
-          address: contract.address,
-          txHash: item.txHash,
-          status: "COMPLETED"
-        });
+        if ((item.numberOfConfirmations + 1) == signaturesRequired) {
+          let txStatus = "COMPLETED"
+          const res = await axios.post(poolServerUrl + "updateStatus", {
+            chainId: localProvider._network.chainId,
+            address: contract.address,
+            txHash: item.txHash,
+            status: txStatus
+          });
+          console.log("BE POST RESULT", res.data);
+          setLoading(false);
+
+          setTimeout(() => {
+            history.push("/history");
+          }, 1000);
+          return
+
+        }
+
 
         setLoading(false);
-
-        console.log("BE POST RESULT", res.data);
         setTimeout(() => {
-          history.push("/history");
+          window.location.reload();
         }, 1000);
+
       } else {
         console.log("Transaction failed!");
         notification.error({

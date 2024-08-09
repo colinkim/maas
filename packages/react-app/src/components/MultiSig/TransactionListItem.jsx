@@ -92,8 +92,8 @@ export default function TransactionListItem({ item, mainnetProvider, blockExplor
           <span style={{ fontSize: 16, fontWeight: "bold" }}>
             {item.transferAmount} {item.transferSymbol}
           </span>
-          <b>To</b>
-          <Address address={item.targetAddress} blockExplorer={blockExplorer} fontSize={16} />
+          <b>New Threshold: {item.newSignaturesRequired}</b>
+
           <>
             {
               children

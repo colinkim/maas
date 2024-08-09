@@ -37,6 +37,7 @@ import { Transactor, Web3ModalSetup } from "./helpers";
 import { Home, Hints, Subgraph, CreateTransaction, Transactions, TxHistory } from "./views";
 import { useStaticJsonRPC, useLocalStorage } from "./hooks";
 
+
 const { Option } = Select;
 const { ethers } = require("ethers");
 
@@ -55,6 +56,7 @@ const web3Modal = Web3ModalSetup();
 function App(props) {
   const networkOptions = [initialNetwork.name];
   const history = useHistory();
+  const [walletChangeCounter, setWalletChangeCounter] = useState(0);
 
   const [injectedProvider, setInjectedProvider] = useState();
   const [address, setAddress] = useState();
@@ -83,10 +85,19 @@ function App(props) {
     await web3Modal.clearCachedProvider();
     if (injectedProvider && injectedProvider.provider && typeof injectedProvider.provider.disconnect == "function") {
       await injectedProvider.provider.disconnect();
+      localStorage.setItem('currentMultiSigAddress', "");
+      localStorage.setItem('currentMultiSigName', "");
+      localStorage.setItem('userTokens', "");
+      localStorage.setItem('selectedTokenAddress', "");
+      localStorage.setItem('selectedToken', "");
     }
     setTimeout(() => {
+
+
+
+      history.push("/");
       window.location.reload();
-    }, 1);
+    }, 2);
   };
 
 
@@ -328,6 +339,22 @@ function App(props) {
     localStorage.setItem('currentMultiSigName', option.name);
     setCurrentMultiSigName(option.name);
     setCurrentMultiSigAddress(value);
+    setWalletChangeCounter(prev => prev + 1); // Increment the counter
+    console.log("handleMultiSigChange")
+
+    console.log(value)
+    if (value) {
+      try {
+        readContracts.MultiSigWallet = new ethers.Contract(value, multiSigWalletABI, localProvider);
+        writeContracts.MultiSigWallet = new ethers.Contract(value, multiSigWalletABI, userSigner);
+
+        setContractNameForEvent("MultiSigWallet");
+      } catch (error) {
+        console.error("Error initializing contracts:", error);
+      }
+    }
+
+
   };
 
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
@@ -497,19 +524,22 @@ function App(props) {
             </Row>
           ) : (
             <Home
+              key={walletChangeCounter}
               contractAddress={currentMultiSigAddress}
               walletName={currentMultiSigName}
               localProvider={localProvider}
-              // price={price}
-              // mainnetProvider={mainnetProvider}
               blockExplorer={blockExplorer}
               contractName={contractName}
               readContracts={readContracts}
+              writeContracts={writeContracts}
+              userSigner={userSigner}
             />
           )}
         </Route>
         <Route path="/transactions">
           <CreateTransaction
+            key={walletChangeCounter}
+
             currentMultiSigName={currentMultiSigName}
             poolServerUrl={BACKEND_URL}
             contractName={contractName}
@@ -527,6 +557,8 @@ function App(props) {
         </Route>
         <Route path="/pending">
           <Transactions
+            key={walletChangeCounter}
+
             poolServerUrl={BACKEND_URL}
             contractName={contractName}
             address={address}
@@ -541,6 +573,8 @@ function App(props) {
         </Route>
         <Route path="/history">
           <TxHistory
+            key={walletChangeCounter}
+
             poolServerUrl={BACKEND_URL}
             contractName={contractName}
             address={address}

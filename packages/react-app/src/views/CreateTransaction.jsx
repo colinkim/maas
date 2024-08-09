@@ -282,12 +282,11 @@ export default function CreateTransaction({
 
 
       const price = await localProvider.getGasPrice();
-      const priceInWei = ethers.utils.parseUnits(price.toString(), 'gwei');
       // Send the transaction
       const tx = await userSigner.sendTransaction({
         to: contract.address,
         data: transaction.data,
-        gasPrice: 50000000000
+        gasPrice: price
       });
 
 
@@ -339,7 +338,8 @@ export default function CreateTransaction({
             transferAmount: amount,
             transferSymbol: transferSymbol,
             blockExplorer: blockExplorer,
-            status: "PENDING"
+            status: "PENDING",
+            newSignaturesRequired: newSignaturesRequired
           });
 
           console.log("BE POST RESULT", res.data);

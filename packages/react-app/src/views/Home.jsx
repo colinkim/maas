@@ -10,6 +10,8 @@ export default function Home({
   blockExplorer,
   contractName,
   readContracts,
+  writeContracts,
+  userSigner,
   walletName,
 }) {
 
@@ -51,7 +53,7 @@ export default function Home({
 
 
           <Tag style={{ padding: '10px', width: 400 }}>
-            <p style={{ fontSize: '24px', marginBottom: '5px' }}><b>{walletName}</b></p>
+            <p style={{ fontSize: '24px', marginBottom: '15px' }}><b>{walletName}</b></p>
 
             <div style={{ display: "flex", justifyContent: "center" }}>
 
@@ -70,7 +72,13 @@ export default function Home({
 
         </div>
         <div style={{ padding: 16 }}>
-          <Owners contractAddress={contractAddress ? contractAddress : ""} walletName={walletName} readContracts={readContracts} contractName={contractName} blockExplorer={blockExplorer} />
+          <Owners
+            contractAddress={contractAddress}
+            blockExplorer={blockExplorer}
+            localProvider={localProvider}
+            contractName={contractName}
+          />
+
         </div>
         {/* <div style={{padding:64}}>
         <Button type={"primary"} onClick={()=>{
